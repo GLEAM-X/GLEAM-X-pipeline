@@ -1,0 +1,80 @@
+#! /bin/bash -l
+
+set -x
+
+pipeuser=PIPEUSER
+obslist=OBSLIST
+
+# If obsnum is a file, then we are in an array job
+if [[ -f ${obslist} ]]
+then
+    echo "obslist file ${obslist}"
+    numfiles=$(wc -l "${obslist}" | awk '{print $1}')
+    echo "${numfiles} obsids to transfer"
+
+    jobid=${SLURM_JOB_ID}
+else
+    echo "ERROR: Expected obsnum to be a file, recieved ${obslist}"    
+    exit 1
+fi
+
+echo "jobid: ${jobid}"
+
+function test_fail {
+if [[ $1 != 0 ]]
+then
+    track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+    exit "$1"
+fi
+}
+
+base=BASEDIR
+user=ENDUSER
+host=ENDPOINT
+remote=REMOTE
+project=PROJECT
+
+failed=0
+progress=0
+cd "${base}" || exit 1
+
+for taskid in $(seq ${numfiles})
+do
+    (( progress=progress+1 ))
+    echo "progress: ${progress}"
+    echo "taskid: ${taskid}"
+
+    track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+
+    cd "${base}" || (echo "cd to ${base} failed " && exit 1)
+    obsnum=$(sed -n -e "${taskid}"p "${obslist}")
+    datadir="${base}/${obsnum}"
+
+    if [[ -d ${datadir} ]]
+    then
+        cd "${datadir}" || exit
+        echo "obsid: ${obsnum}"
+        # Singularity does not mount the home directory on pawsey correctly, so 
+        # best to avoid trying to hit the home directory and load ssh keys elsewhere
+        rsync  -rvh --inplace --progress --stats \
+                            -e "ssh -o StrictHostKeyChecking=no -i ${GXSSH}" \
+                                    ./*.bin \
+                                    ./*.ms.zip \
+                                    ./*.png \
+                                    ./*.pdf \
+                                    "${user}@${host}:${remote}/${obsnum}"
+        # test_fail $?
+
+        echo 'Updating database'
+        track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+
+    else
+        echo "WARNING: ${obsnum} / ${taskid} / ${datadir} not found. Skipping. "
+        (( failed=failed+1 ))
+    fi
+done
+
+(( success=numfiles-failed ))
+echo "Total obsids: ${numfiles}"
+echo "Succeeded: ${success}"
+echo "Failed: ${failed}"
