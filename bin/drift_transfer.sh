@@ -2,11 +2,11 @@
 
 endpoint='146.118.68.233' #HOST is already used as a keyword in other script
 user='ubuntu'
-remote='/mnt/gxarchive/GLEAM-X/Archived_Obsids'
+remote='/mnt/gxarchive/Archived_Obsids'
 
 usage()
 {
-echo "obs_archive.sh [-d dep] [-p project] [-a account] [-u user] [-e endpoint] [-r remote_directory] [-t] obsnum
+echo "drift_archive.sh [-d dep] [-p project] [-a account] [-u user] [-e endpoint] [-r remote_directory] [-t] obsnum
 
 Will rsync files over to a remote end point. It is expected that items have already been packaged for transfer by running drift_archive_prep.sh
 
@@ -27,7 +27,7 @@ if [[ -z ${GXSSH} ]] || [[ ! -r "${GXSSH}" ]]
 then
     echo "The GXSSH variable has not been configured, or the corresponding key can not be accessed. "
     echo 'Ensure the ssh key exists and is correctly described in the GLEAM-X profile script.'
-    echo 'If necessary a key pair can be created with `ssh-keygen -t rsa -f "${GXBASE}/ssh_keys/gx_${GXUSER}"'
+    echo 'If necessary a key pair can be created with ssh-keygen -t rsa -f "${GXBASE}/ssh_keys/gx_${GXUSER}"'
     echo "drift_transfer.sh will not attempt to archive. "
     exit 1
 fi
@@ -112,7 +112,7 @@ chmod 755 "${script}"
 # sbatch submissions need to start with a shebang
 echo '#!/bin/bash' > "${script}.sbatch"
 echo 'module load singularity' >> "${script}.sbatch"
-echo "export SINGULARITY_BINDPATH=${SINGULARITY_BINDPATH},/home/tgalvin/.ssh" >> "${script}.sbatch"
+echo "export SINGULARITY_BINDPATH=${SINGULARITY_BINDPATH}" >> "${script}.sbatch"
 echo "singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
 if [ ! -z ${GXNCPULINE} ]
@@ -144,19 +144,20 @@ echo "Submitted ${script} as ${jobid} . Follow progress here:"
 obserror=$(echo "${error}" | sed -e "s/%A/${jobid}/" -e "s/%a/${taskid}/")
 obsoutput=$(echo "${output}" | sed -e "s/%A/${jobid}/" -e "s/%a/${taskid}/")
 
-    echo "${obsoutput}"
-    echo "${obserror}"
+echo "${obsoutput}"
+echo "${obserror}"
 
 for taskid in $(seq ${numfiles})
     do
 
     obs=$(sed -n -e "${taskid}p" "${obslist}")
 
-    # if [ "${GXTRACK}" = "track" ]
-    # then
-    # # record submission
-    # ${GXCONTAINER} track_task.py queue --jobid="${jobid}" --taskid="${taskid}" --task='transfer' --submission_time="$(date +%s)" --batch_file="${script}" \
-    #                     --obs_id="${obs}" --stderr="${obserror}" --stdout="${obsoutput}"
-    # fi
+    if [ "${GXTRACK}" = "track" ]
+    then
+        echo "Submitting track_task for ${taskid} / ${obs}"
+        # record submission
+        ${GXCONTAINER} track_task.py queue --jobid="${jobid}" --taskid="${taskid}" --task='transfer' --submission_time="$(date +%s)" --batch_file="${script}" \
+                            --obs_id="${obs}" --stderr="${obserror}" --stdout="${obsoutput}"
+    fi
 
 done
