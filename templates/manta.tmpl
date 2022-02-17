@@ -8,6 +8,7 @@ pipeuser=PIPEUSER
 base=BASEDIR
 obslist=OBSLIST
 stem=STEM
+delivery=DELIVERY
 
 # start download
 cd "${base}" || exit 1
@@ -21,7 +22,7 @@ done
 
 export SSL_VERIFY=0
 mwa_client --csv="${obslist}_manta.tmp" --dir="${base}"
-
+acacia
 n=1
 for obsnum in $list
 do

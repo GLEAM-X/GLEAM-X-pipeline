@@ -12,7 +12,8 @@ echo "obs_manta.sh [-p project] [-d dep] [-s timeave] [-k freqav] [-t] -o list_o
   -g          : download gpubox fits files instead of measurement sets
   -t          : test. Don't submit job, just make the batch file
                 and then return the submission command
-  -o obslist  : the list of obsids to process" 1>&2;
+  -o obslist  : the list of obsids to process
+  -a          : will deliver data through the astro file system available on pawsey" 1>&2;
 exit 1;
 }
 
@@ -35,6 +36,7 @@ timeres=
 freqres=
 edgeflag=80
 expiry=7
+astro=0
 
 # parse args and set options
 while getopts ':tgd:p:s:k:o:f:e:' OPTION
@@ -58,6 +60,8 @@ do
         edgeflag=${OPTARG} ;;
     e)
         expiry=${OPTARG} ;;
+    a)
+        astro=1 ;;
     ? | : | h)
             usage ;;
   esac
@@ -84,6 +88,13 @@ cd "${base}" || exit 1
 dllist=""
 list=$(cat "${obslist}")
 if [[ -e "${obslist}_manta.tmp" ]] ; then rm "${obslist}_manta.tmp" ; fi
+
+if [[ ${astro} -eq 0 ]]
+then
+    delivery="acacia"
+else 
+    delivery="astro"
+fi
 
 # Set up telescope-configuration-dependent options
 # Might use these later to get different metafits files etc
@@ -112,10 +123,10 @@ do
     else
         if [[ -z ${gpubox} ]]
         then
-            echo "obs_id=${obsnum}, delivery=acacia, job_type=c, timeres=${timeres}, freqres=${freqres}, edgewidth=${edgeflag}, conversion=ms, allowmissing=true, flagdcchannels=true" >>  "${obslist}_manta.tmp"
+            echo "obs_id=${obsnum}, delivery=${delivery}, job_type=c, timeres=${timeres}, freqres=${freqres}, edgewidth=${edgeflag}, conversion=ms, allowmissing=true, flagdcchannels=true" >>  "${obslist}_manta.tmp"
             stem="ms"
         else
-            echo "obs_id=${obsnum}, delivery=acacia, job_type=d, download_type=vis" >>  "${obslist}_manta.tmp"
+            echo "obs_id=${obsnum}, delivery=${delivery}, job_type=d, download_type=vis" >>  "${obslist}_manta.tmp"
             stem="vis"
         fi
         dllist=$dllist"$obsnum "
@@ -130,6 +141,7 @@ echo "obslist is $obslist"
 
 cat "${GXBASE}/templates/manta.tmpl" | sed -e "s:OBSLIST:${obslist}:g" \
                                  -e "s:STEM:${stem}:g"  \
+                                 -e "s:DELIVERY:${delivery}:g"  \
                                  -e "s:BASEDIR:${base}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
