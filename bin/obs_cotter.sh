@@ -85,19 +85,43 @@ else
     testobs=${obsnum}
 fi
 
-if [[ $testobs -lt 1151402936 ]] ; then
-    # MWA128T, basescale 1.1
-    if [[ -z $freqres ]] ; then freqres=40 ; fi
-    if [[ -z $timeres ]] ; then timeres=4 ; fi
-elif [[ $testobs -ge 1151402936 ]] && [[ $testobs -lt 1191580576 ]] ; then
-    # MWAHEX, basescale 2.0
-    if [[ -z $freqres ]] ; then freqres=40 ; fi
-    if [[ -z $timeres ]] ; then timeres=8 ; fi
-elif [[ $testobs -ge 1191580576 ]] ; then
-    # MWALB, basescale 0.5
-    if [[ -z $freqres ]] ; then freqres=40 ; fi
-    if [[ -z $timeres ]] ; then timeres=4 ; fi
-fi
+INSTRUMENT=$(curl --no-progress-meter  "http://ws.mwatelescope.org/metadata/con?obs_id=${testobs}&summary" | cut -d '"' -f2)
+INSTFREQ=40
+INSTTIME=8
+if [[ "$INSTRUMENT" == '128T' ]]
+then 
+    INSTFREQ=40
+    INSTTIME=4    
+elif [[ "$INSTRUMENT" == 'HEX' ]]
+then
+    INSTFREQ=40
+    INSTTIME=8
+elif [[ "$INSTRUMENT" == 'LB' ]]
+then
+    INSTFREQ=40
+    INSTTIME=4
+else
+    # Historical lookup based on obsids as fallback
+    if [[ $testobs -lt 1151402936 ]] ; then
+        # MWA128T, basescale 1.1
+        INSTFREQ=40
+        INSTTIME=8 
+    elif [[ $testobs -ge 1151402936 ]] && [[ $testobs -lt 1191580576 ]] ; then
+        # MWAHEX, basescale 2.0
+        INSTFREQ=40
+        INSTTIME=4 
+    elif [[ $testobs -ge 1191580576 ]] ; then
+        # MWALB, basescale 0.5
+        INSTFREQ=40
+        INSTTIME=4 
+    fi
+fi 
+
+# Overwrite if user provided values
+if [[ -n $freqres ]] ; then freqres=$INSTFREQ ; fi
+if [[ -n $timeres ]] ; then timeres=$INSTTIME ; fi
+
+
 
 script="${GXSCRIPT}/cotter_${obsnum}.sh"
 cat "${GXBASE}/templates/cotter.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
