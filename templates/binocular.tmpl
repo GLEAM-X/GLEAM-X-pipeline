@@ -83,6 +83,7 @@ do
             -auto-threshold "$tsigma" \
             -pol I \
             -weight briggs "${robust}" \
+            -scale "${scale:0:8}" \
             "${obsnum}_flag.ms"
 
     BANE --cores ${GXNCPUS} --compress --noclobber "${obsnum}_${dir}-image.fits"
