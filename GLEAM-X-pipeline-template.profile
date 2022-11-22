@@ -58,7 +58,7 @@ export GXNCPULINE="--ntasks-per-node=${GXNPCPUS}"  # Informs the SLURM request h
                                 # For SLURM environments that do not share a node among users (entire node is booked for a request), it is suggested that 
                                 # this option is left empty.  
 
-export GXSRUNLINE="--nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${GXNCPUS}"     #With setonix there is a new configuration of slurm so now it won't take the ncpus variable from sbatch, instead we have to use srun -ncpus-per-task when calling the script. This should be a reasonable addition and shouldn't break anything, it will be occaisionally overwritten for times when the cpus needed is only 1 e.g. applycal. 
+export GXSRUNLINE="--cpus-per-task=${GXNCPUS}"     #With setonix there is a new configuration of slurm so now it won't take the ncpus variable from sbatch, instead we have to use srun -ncpus-per-task when calling the script. This should be a reasonable addition and shouldn't break anything, it will be occaisionally overwritten for times when the cpus needed is only 1 e.g. applycal. 
 
 # SLURM job submission details 
 export GXTASKLINE=                              # Reserved space for additional slurm sbatch options, if needed. This is passed to all SLURM sbatch calls. 

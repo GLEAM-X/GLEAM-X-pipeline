@@ -140,7 +140,7 @@ chmod 755 "${script}"
 echo '#!/bin/bash' > "${script}.sbatch"
 echo 'module load singularity/3.8.6' >> "${script}.sbatch"
 echo "export SINGULARITY_BINDPATH=${SINGULARITY_BINDPATH}" >> "${script}.sbatch"
-echo "singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
+echo "srun ${GXSRUNLINE} singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
 # This is the only task that should reasonably be expected to run on another cluster. 
 # Export all GLEAM-X pipeline configurable variables and the MWA_ASVO_API_KEY to ensure 
