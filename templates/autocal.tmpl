@@ -95,11 +95,9 @@ then
                 --racol=RAJ2000 --decol=DEJ2000 --acol=a --bcol=b --pacol=pa --fluxcol=S_200 --alphacol=alpha
 fi
 calmodel="${obsnum}_local_gleam_model.txt"
-awk '{print}' "${fora}" "${pica}" >> "${calmodel}"
-
 
 cd "${datadir}/${obsnum}" || exit
-
+awk '{print}' "${fora}" "${pica}" >> "${calmodel}"
 # Check whether the phase centre has already changed
 # Calibration will fail if it has, so measurement set must be shifted back to its original position
 current=$(chgcentre "${obsnum}.ms") 
