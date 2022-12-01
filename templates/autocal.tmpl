@@ -99,7 +99,7 @@ calmodelapp="${obsnum}_local_gleam_model_appended.txt"
 
 cd "${datadir}/${obsnum}" || exit
 
-awk '{print}' "${fora}" "${pica}" >> "${calmodelapp}"
+awk '{print}' "${calmodel}" "${fora}" "${pica}" >> "${calmodelapp}"
 # Check whether the phase centre has already changed
 # Calibration will fail if it has, so measurement set must be shifted back to its original position
 current=$(chgcentre "${obsnum}.ms") 
