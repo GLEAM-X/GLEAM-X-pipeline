@@ -40,11 +40,22 @@ fi
 base=BASEDIR
 debug=DEBUG
 
+# WSClean suffixes for subchannels and MFS
+subchans="MFS 0000 0001 0002 0003"
+# Minimum uvw for self-calibration (in lambda)
+minuv=75
+# S/N Level at which to choose masked pixels for deepclean
+msigma=3
+# S/N Threshold at which to stop cleaning
+tsigma=1
+
+
 # apply calibration
 track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 cd "${base}/${obsnum}" || exit
 
+metafits="$(ls -t ${obsnum}*metafits* | head -1)"
 calfile="${base}/${calid}/${calid}_local_gleam_model_solutions_initial_ref.bin"
 
 if [[ ! -e "${calfile}" ]]
@@ -62,12 +73,38 @@ then
     applysolutions \
                 ${obsnum}.ms \
                 "${calfile}"
+    datacolumn="CORRECTED_DATA"
+    
 # If in production mode, apply to the DATA column
 else
     applysolutions \
                 -nocopy \
                 ${obsnum}.ms \
                 "${calfile}"
+fi
+
+
+# Do rough model subtrack image if in debug mode: 
+if [[ ! -z $debug ]]
+then
+    # TODO: Currently just assuming its LB since all GX should be but update 
+    telescope="MWALB"
+    basescale=0.6
+    imsize=8000
+    robust=0.5
+    chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+    scale=$(echo "$basescale / $chan" | bc -l)
+    wsclean -nmiter 1 -niter 1000 \
+       -name ${obsnum}_modelsub
+       -scale ${scale:0:8} \
+       -mgain 0.85 \
+       -subtract-model \ 
+       -auto-threshold 8 \
+       -size ${imsize} ${imsize} \
+       -pol I \
+       -weight briggs ${robust} \
+       -data-column ${datacolumn} \
+       ${obsnum}.ms  
 fi
 
 test_fail $?
