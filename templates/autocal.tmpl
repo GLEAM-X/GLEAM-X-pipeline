@@ -44,7 +44,7 @@ fraction=FRACTION
 sthresh=STHRESH
 
 # GLEAM-X sky model
-catfile="${GXBASE}/models/GGSM_nopicafora.fits"
+catfile="${GXBASE}/models/GGSM_newmodel.fits"
 pica="${GXBASE}/models/model-PictorA_withalpha.txt"
 fora="${GXBASE}/models/model-FornaxA_2comp_withalpha.txt"
 
@@ -95,11 +95,10 @@ then
                 --racol=RAJ2000 --decol=DEJ2000 --acol=a --bcol=b --pacol=pa --fluxcol=S_200 --alphacol=alpha
 fi
 calmodel="${obsnum}_local_gleam_model.txt"
-# calmodelapp="${obsnum}_local_gleam_model_appended.txt"
+# cat "${pica}" "${fora}" >> "${calmodel}"
 
 cd "${datadir}/${obsnum}" || exit
 
-awk '{print}' "${pica}" "${fora}" >> "${calmodel}"
 # Check whether the phase centre has already changed
 # Calibration will fail if it has, so measurement set must be shifted back to its original position
 current=$(chgcentre "${obsnum}.ms") 
