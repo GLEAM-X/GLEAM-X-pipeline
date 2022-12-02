@@ -95,7 +95,7 @@ then
     chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
     scale=$(echo "$basescale / $chan" | bc -l)
     wsclean -nmiter 1 -niter 1000 \
-       -name ${obsnum}_modelsub
+       -name ${obsnum}_modelsub \
        -scale ${scale:0:8} \
        -mgain 0.85 \
        -subtract-model \ 
