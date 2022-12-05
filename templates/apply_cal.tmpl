@@ -97,13 +97,13 @@ then
     wsclean -nmiter 1 -niter 1000 \
        -name ${obsnum}_modelsub \
        -scale ${scale:0:8} \
-       -mgain 0.85 \
-       -subtract-model \ 
+       -mgain 0.85 \ 
        -auto-threshold 8 \
        -size ${imsize} ${imsize} \
        -pol I \
        -weight briggs ${robust} \
        -data-column ${datacolumn} \
+       -subtract-model \
        ${obsnum}.ms  
 fi
 
