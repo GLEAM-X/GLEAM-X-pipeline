@@ -94,17 +94,23 @@ then
     robust=0.5
     chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
     scale=$(echo "$basescale / $chan" | bc -l)
-    wsclean -nmiter 1 -niter 1000 \
-       -name ${obsnum}_modelsub \
-       -scale ${scale:0:8} \
-       -mgain 0.85 \ 
-       -auto-threshold 8 \
-       -size ${imsize} ${imsize} \
-       -pol I \
-       -weight briggs ${robust} \
-       -data-column ${datacolumn} \
-       -subtract-model \
-       ${obsnum}.ms  
+    wsclean $multiscale \
+        -nmiter 1 \
+        -niter 100 \
+        -reuse-primary-beam \
+        -apply-primary-beam \
+        -auto-mask $msigma \
+        -auto-threshold $tsigma \
+        -name ${obsnum}_deep \
+        -size ${imsize} ${imsize} \
+        -scale ${scale:0:8} \
+        -weight briggs ${robust} \
+        -pol I \
+        -join-channels \
+        -channels-out 4 \
+        -data-column ${datacolumn} \
+        -
+        ${obsnum}.ms 
 fi
 
 test_fail $?
