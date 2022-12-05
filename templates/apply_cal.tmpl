@@ -94,14 +94,17 @@ then
     robust=0.5
     chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
     scale=$(echo "$basescale / $chan" | bc -l)
-    wsclean $multiscale \
+    wsclean -multiscale \
+        -abs-mem ${GXMEMORY} \
+        -mgain 0.85 \
+        -multiscale-gain 0.15 \
         -nmiter 1 \
-        -niter 100 \
-        -reuse-primary-beam \
-        -apply-primary-beam \
-        -auto-mask $msigma \
+        -niter 1000 \
+        # -reuse-primary-beam \
+        # -apply-primary-beam \
+        # -auto-mask $msigma \
         -auto-threshold $tsigma \
-        -name ${obsnum}_deep \
+        -name ${obsnum}_submodel \
         -size ${imsize} ${imsize} \
         -scale ${scale:0:8} \
         -weight briggs ${robust} \
@@ -109,9 +112,11 @@ then
         -join-channels \
         -channels-out 4 \
         -data-column ${datacolumn} \
-        -
+        -subtract-model \
         ${obsnum}.ms 
 fi
+
+wsclean -multiscale -mgain 0.85 -multiscale-gain 0.15 -nmiter 1 -niter 1000 -name 1286820376_modeltest -auto-threshold 1 -size 8000 8000 -scale 0.0086956 -weight briggs 0.5 -pol I -join-channels -channels-out 4 -save-source-list -data-column CORRECTED_DATA -fit-spectral-pol 2 -subtract-model 1286820376.ms
 
 test_fail $?
 
