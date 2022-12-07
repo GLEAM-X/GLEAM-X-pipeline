@@ -93,13 +93,11 @@ then
     robust=0.5
     chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
     scale=$(echo "$basescale / $chan" | bc -l)
-    wsclean -multiscale \
-            -mgain 0.85 \
-            -multiscale-gain 0.15 \
+    wsclean \
             -abs-mem ${GXMEMORY} \
             -mgain 1.0 \
             -nmiter 1 \
-            -niter 1 \
+            -niter 0 \
             -name ${obsnum}_presubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
@@ -118,9 +116,7 @@ then
     robust=0.5
     chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
     scale=$(echo "$basescale / $chan" | bc -l)
-    wsclean -multiscale \
-            -mgain 0.85 \
-            -multiscale-gain 0.15 \
+    wsclean \
             -abs-mem ${GXMEMORY} \
             -mgain 1.0 \
             -nmiter 1 \
