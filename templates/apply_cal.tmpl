@@ -106,8 +106,6 @@ then
             -scale ${scale:0:8} \
             -pol XX \
             -data-column ${datacolumn} \
-            -channel-range 4 5 \
-            -interval 4 5 \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
 
@@ -122,10 +120,9 @@ then
             -scale ${scale:0:8} \
             -pol XX \
             -data-column "MODEL_DATA" \
-            -channel-range 4 5 \
-            -interval 4 5 \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
+            
     subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
 
     telescope="MWALB"
@@ -145,8 +142,6 @@ then
             -scale ${scale:0:8} \
             -pol XX \
             -data-column ${datacolumn} \
-            -channel-range 4 5 \
-            -interval 4 5 \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
 fi
