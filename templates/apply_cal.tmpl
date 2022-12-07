@@ -87,6 +87,28 @@ fi
 # Do rough model subtrack image if in debug mode: 
 if [[ ! -z $debug ]]
 then
+    telescope="MWALB"
+    basescale=0.6
+    imsize=8000
+    robust=0.5
+    chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+    scale=$(echo "$basescale / $chan" | bc -l)
+    wsclean -multiscale \
+            -mgain 0.85 \
+            -multiscale-gain 0.15 \
+            -abs-mem ${GXMEMORY} \
+            -mgain 1.0 \
+            -nmiter 1 \
+            -niter 1000 \
+            -name ${obsnum}_presubtraction \
+            -size ${imsize} ${imsize} \
+            -scale ${scale:0:8} \
+            -pol XX \
+            -data-column ${datacolumn} \
+            -channel-range 4 5 \
+            -interval 4 5 \
+            -nwlayers ${GXNCPUS} \
+            "${obsnum}.ms"
     # TODO: Currently just assuming its LB since all GX should be but update 
     subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
 
@@ -102,8 +124,8 @@ then
             -abs-mem ${GXMEMORY} \
             -mgain 1.0 \
             -nmiter 1 \
-            -niter 0 \
-            -name ${obsnum}_template \
+            -niter 1000 \
+            -name ${obsnum}_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
