@@ -87,6 +87,8 @@ fi
 # Do rough model subtrack image if in debug mode: 
 if [[ ! -z $debug ]]
 then
+    # TODO: Currently just assuming its LB since all GX should be but update 
+
     telescope="MWALB"
     basescale=0.6
     imsize=8000
@@ -98,7 +100,8 @@ then
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
-            -name ${obsnum}_presubtraction \
+            -no-dirty \ 
+            -name ${obsnum}_owncal_presubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
@@ -113,7 +116,8 @@ then
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
-            -name ${obsnum}_modelcol \
+            -no-dirty \
+            -name ${obsnum}_owncal_modelcol \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
@@ -122,7 +126,6 @@ then
             -interval 4 5 \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
-    # TODO: Currently just assuming its LB since all GX should be but update 
     subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
 
     telescope="MWALB"
@@ -136,7 +139,8 @@ then
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
-            -name ${obsnum}_postsubtraction \
+            -no-dirty \
+            -name ${obsnum}_owncal_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
