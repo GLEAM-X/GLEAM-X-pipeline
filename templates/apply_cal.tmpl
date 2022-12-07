@@ -107,6 +107,21 @@ then
             -interval 4 5 \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
+
+    wsclean \
+            -abs-mem ${GXMEMORY} \
+            -mgain 1.0 \
+            -nmiter 1 \
+            -niter 0 \
+            -name ${obsnum}_modelcol \
+            -size ${imsize} ${imsize} \
+            -scale ${scale:0:8} \
+            -pol XX \
+            -data-column "MODEL_DATA" \
+            -channel-range 4 5 \
+            -interval 4 5 \
+            -nwlayers ${GXNCPUS} \
+            "${obsnum}.ms"
     # TODO: Currently just assuming its LB since all GX should be but update 
     subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
 
@@ -120,7 +135,7 @@ then
             -abs-mem ${GXMEMORY} \
             -mgain 1.0 \
             -nmiter 1 \
-            -niter 1 \
+            -niter 0 \
             -name ${obsnum}_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
