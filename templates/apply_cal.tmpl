@@ -103,7 +103,9 @@ then
             -name ${obsnum}_presubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol XX \
+            -pol I \
+            -join-channels \
+            -channels-out 4 \            
             -data-column ${datacolumn} \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
@@ -116,7 +118,9 @@ then
             -name ${obsnum}_modelcol \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol XX \
+            -pol I \
+            -join-channels \
+            -channels-out 4 \
             -data-column "MODEL_DATA" \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
@@ -137,7 +141,9 @@ then
             -name ${obsnum}_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol XX \
+            -pol I \
+            -join-channels \
+            -channels-out 4 \
             -data-column ${datacolumn} \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
