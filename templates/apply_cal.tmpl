@@ -100,8 +100,7 @@ then
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
-            -no-dirty \ 
-            -name ${obsnum}_owncal_presubtraction \
+            -name ${obsnum}_presubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
@@ -114,15 +113,14 @@ then
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
-            -no-dirty \
-            -name ${obsnum}_owncal_modelcol \
+            -name ${obsnum}_modelcol \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
             -data-column "MODEL_DATA" \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
-            
+
     subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
 
     telescope="MWALB"
@@ -136,8 +134,7 @@ then
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
-            -no-dirty \
-            -name ${obsnum}_owncal_postsubtraction \
+            -name ${obsnum}_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
