@@ -97,6 +97,7 @@ then
     scale=$(echo "$basescale / $chan" | bc -l)
     wsclean \
             -abs-mem ${GXMEMORY} \
+            -j 12 \
             -multiscale \
             -multiscale-gain 0.15 \
             -mgain 1.0 \
@@ -107,13 +108,14 @@ then
             -scale ${scale:0:8} \
             -pol XX \
             -join-channels \
-            -channels-out 4 \            
+            -channels-out 4 \
             -data-column ${datacolumn} \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
 
     wsclean \
             -abs-mem ${GXMEMORY} \
+            -j 12 \
             -multiscale \
             -multiscale-gain 0.15 \
             -mgain 1.0 \
@@ -139,6 +141,7 @@ then
     scale=$(echo "$basescale / $chan" | bc -l)
     wsclean \
             -abs-mem ${GXMEMORY} \
+            -j 12 \
             -multiscale \
             -multiscale-gain 0.15 \
             -mgain 1.0 \
