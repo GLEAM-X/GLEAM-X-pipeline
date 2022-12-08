@@ -105,7 +105,7 @@ then
             -name ${obsnum}_presubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol I \
+            -pol XX \
             -join-channels \
             -channels-out 4 \            
             -data-column ${datacolumn} \
@@ -122,7 +122,7 @@ then
             -name ${obsnum}_modelcol \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol I \
+            -pol XX \
             -join-channels \
             -channels-out 4 \
             -data-column "MODEL_DATA" \
@@ -147,7 +147,7 @@ then
             -name ${obsnum}_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol I \
+            -pol XX \
             -join-channels \
             -channels-out 4 \
             -data-column ${datacolumn} \
