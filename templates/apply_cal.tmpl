@@ -131,6 +131,24 @@ then
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
 
+    pols="XX"
+
+    for n in {0..3}
+    do
+        i=$((n * 6))
+        cstart=${chans[$i]}
+        j=$((i + 5))
+        cend=${chans[$j]}
+        if [[ ! -e "${obsnum}_000${n}-XX-beam.fits" ]]
+        then
+            lookup_jones.py ${obsnum} _gdcal_presubtraction-image.fits ${obsnum}_000${n}- -c $cstart-$cend --wsclean_names
+        fi
+        for pol in $pols
+        do
+            ln -s "${obsnum}_000${n}-${pol}-beam.fits" "${obsnum}_deep-000${n}-beam-${pol}.fits"
+        done
+    done
+
     subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
 
     telescope="MWALB"
