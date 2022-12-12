@@ -101,6 +101,7 @@ then
             -multiscale \
             -multiscale-gain 0.15 \
             -nmiter 1 \
+            -mgain 0.85 \
             -niter 0 \
             -update-model-required \
             -name ${obsnum}_gdcal_presubtraction \
@@ -119,6 +120,7 @@ then
             -multiscale \
             -multiscale-gain 0.15 \
             -nmiter 1 \
+            -mgain 0.85 \
             -niter 0 \
             -name ${obsnum}_gdcal_modelcol \
             -size ${imsize} ${imsize} \
@@ -145,6 +147,7 @@ then
             -multiscale-gain 0.15 \
             -nmiter 1 \
             -niter 0 \
+            -mgain 0.85
             -name ${obsnum}_gdcal_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
