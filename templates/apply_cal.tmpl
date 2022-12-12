@@ -104,7 +104,7 @@ then
             -mgain 0.85 \
             -niter 0 \
             -update-model-required \
-            -name ${obsnum}_gdcal_presubtraction \
+            -name ${obsnum}_owncal_presubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
@@ -122,7 +122,7 @@ then
             -nmiter 1 \
             -mgain 0.85 \
             -niter 0 \
-            -name ${obsnum}_gdcal_modelcol \
+            -name ${obsnum}_owncal_modelcol \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
@@ -148,7 +148,7 @@ then
             -nmiter 1 \
             -niter 0 \
             -mgain 0.85
-            -name ${obsnum}_gdcal_postsubtraction \
+            -name ${obsnum}_owncal_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
