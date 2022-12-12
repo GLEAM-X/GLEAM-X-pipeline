@@ -102,14 +102,12 @@ then
             -multiscale-gain 0.15 \
             -nmiter 1 \
             -mgain 0.8 \
-            -niter 1 \
+            -niter 0 \
             -update-model-required \
             -name ${obsnum}_owncal_presubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
-            -join-channels \
-            -channels-out 4 \
             -data-column ${datacolumn} \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
@@ -121,13 +119,11 @@ then
             -multiscale-gain 0.15 \
             -nmiter 1 \
             -mgain 0.8 \
-            -niter 1 \
+            -niter 0 \
             -name ${obsnum}_owncal_modelcol \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
-            -join-channels \
-            -channels-out 4 \
             -data-column "MODEL_DATA" \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
@@ -146,14 +142,12 @@ then
             -multiscale \
             -multiscale-gain 0.15 \
             -nmiter 1 \
-            -niter 1 \
+            -niter 0 \
             -mgain 0.8 \
             -name ${obsnum}_owncal_postsubtraction \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
             -pol XX \
-            -join-channels \
-            -channels-out 4 \
             -data-column ${datacolumn} \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
