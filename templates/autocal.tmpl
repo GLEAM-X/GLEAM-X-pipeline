@@ -44,7 +44,7 @@ fraction=FRACTION
 sthresh=STHRESH
 
 # GLEAM-X sky model
-catfile="${GXBASE}/models/GGSM_nopicafora.fits"
+catfile="${GXBASE}/models/GGSM_newfora.fits"
 pica="${GXBASE}/models/model-PictorA_withalpha.txt"
 fora="${GXBASE}/models/model-FornaxA_2comp_withalpha.txt"
 
@@ -53,7 +53,7 @@ fora="${GXBASE}/models/model-FornaxA_2comp_withalpha.txt"
 MWAPATH="${GXMWAPB}"
 
 # Minimum baseline of 75 lambda (=250m at 88 MHz) for calibration
-minuv=75
+minuv=150
 
 # Perform ionospheric triage? (1 means yes, blank means no)
 ion=IONOTEST
@@ -95,7 +95,7 @@ then
                 --racol=RAJ2000 --decol=DEJ2000 --acol=a --bcol=b --pacol=pa --fluxcol=S_200 --alphacol=alpha
 fi
 calmodel="${obsnum}_local_gleam_model.txt"
-cat "${fora}" >> "${calmodel}"
+# cat "${fora}" >> "${calmodel}"
 
 cd "${datadir}/${obsnum}" || exit
 
