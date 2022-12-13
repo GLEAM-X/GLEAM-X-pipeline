@@ -3,7 +3,7 @@
 pipeuser=PIPEUSER
 obsnum=OBSNUM
 calid=CALID
-
+imext=IMEXT 
 # If obsnum is a file, then we are in an array job
 if [[ -f ${obsnum} ]]
 then
@@ -74,7 +74,13 @@ then
                 ${obsnum}.ms \
                 "${calfile}"
     datacolumn="CORRECTED_DATA"
-    
+    subtrmodel \
+                -mwapath $GXMWAPB \
+                -datacolumn "MODEL_DATA" \
+                -applybeam \
+                -s \
+                ${obsnum}_local_gleam_model.txt \
+                ${obsnum}.ms
 # If in production mode, apply to the DATA column
 else
     applysolutions \
@@ -82,6 +88,7 @@ else
                 ${obsnum}.ms \
                 "${calfile}"
 fi
+
 
 
 # Do rough model subtrack image if in debug mode: 
@@ -101,16 +108,32 @@ then
             -multiscale \
             -multiscale-gain 0.15 \
             -nmiter 1 \
-            -mgain 0.8 \
             -niter 0 \
-            -update-model-required \
-            -name ${obsnum}_owncal_presubtraction \
+            -name ${obsnum}_${imext} \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol XX \
+            -pol I \
             -data-column ${datacolumn} \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
+
+# pols="XX XXi XY XYi YX YXi YY YYi"
+
+# for n in {0..3}
+# do
+#     i=$((n * 6))
+#     cstart=${chans[$i]}
+#     j=$((i + 5))
+#     cend=${chans[$j]}
+#     if [[ ! -e "${obsnum}_000${n}-${pol}-beam.fits" ]]
+#     then
+    # lookup_jones.py ${obsnum} _${imext}.fits ${obsnum}- -c $cstart-$cend --wsclean_names
+    # # fi
+    # # for pol in $pols
+    # # do
+    # ln -s "${obsnum}_-${pol}-beam.fits" "${obsnum}_deep-000${n}-beam-${pol}.fits"
+#     done
+# done
 
     wsclean \
             -abs-mem ${GXMEMORY} \
@@ -118,12 +141,11 @@ then
             -multiscale \
             -multiscale-gain 0.15 \
             -nmiter 1 \
-            -mgain 0.8 \
             -niter 0 \
-            -name ${obsnum}_owncal_modelcol \
+            -name ${obsnum}_${imext} \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol XX \
+            -pol I \
             -data-column "MODEL_DATA" \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"
@@ -143,11 +165,10 @@ then
             -multiscale-gain 0.15 \
             -nmiter 1 \
             -niter 0 \
-            -mgain 0.8 \
-            -name ${obsnum}_owncal_postsubtraction \
+            -name ${obsnum}_${imext} \
             -size ${imsize} ${imsize} \
             -scale ${scale:0:8} \
-            -pol XX \
+            -pol I \
             -data-column ${datacolumn} \
             -nwlayers ${GXNCPUS} \
             "${obsnum}.ms"

@@ -4,6 +4,7 @@ usage()
 {
 echo "obs_apply_cal.sh [-p project] [-d dep] [-a account] [-c calid] [-z] [-t] obsnum
   -p project  : project, no default
+  -e imext    : extension name for images 
   -d dep      : job number for dependency (afterok)
   -c calid    : obsid for calibrator.
                 project/calid/calid_*_solutions.bin will be used
@@ -29,7 +30,7 @@ account=
 debug=
 
 # parse args and set options
-while getopts ':tzd:a:c:p:' OPTION
+while getopts ':tzd:a:c:p:e:' OPTION
 do
     case "$OPTION" in
     d)
@@ -40,6 +41,9 @@ do
 	    ;;
     p)
         project=${OPTARG}
+        ;;
+    e)
+        imext=${OPTARG}
         ;;
     z)
         debug=1
@@ -106,6 +110,7 @@ cat "${GXBASE}/templates/apply_cal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                        -e "s:BASEDIR:${base}:g" \
                                        -e "s:DEBUG:${debug}:g" \
                                        -e "s:CALID:${calid}:g" \
+                                       -e "s:IMEXT:${imext}:g" \
                                        -e "s:PIPEUSER:${pipeuser}:g"  > ${script}
 
 chmod 755 "${script}"
