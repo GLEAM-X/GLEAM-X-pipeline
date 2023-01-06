@@ -167,7 +167,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
     mkdir "${resampdir}"
 
     echo "Generating resampled images for for ${obslist} subband $subchan."
-    swarp -c "${template}.resamp" @"${imagelist}.list"
+    swarp @"${imagelist}.list" -c "${template}.resamp"
     # resampled images should now appear in ./resamp
 
     # remove the old lists for the pre-resampled images
