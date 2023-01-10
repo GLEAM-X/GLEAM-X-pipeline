@@ -44,8 +44,8 @@ fraction=FRACTION
 sthresh=STHRESH
 
 # GLEAM-X sky model
-catfile="${GXBASE}/models/GGSM_updated_flatpica.fits"
-pica="${GXBASE}/models/model-PictorA_withalpha.txt"
+catfile="${GXBASE}/models/GGSM_nopica_newfora.fits"
+pica="${GXBASE}/models/model-PictorA_multifreq.txt"
 fora="${GXBASE}/models/model-FornaxA_2comp_withalpha.txt"
 
 
@@ -95,7 +95,7 @@ then
                 --racol=RAJ2000 --decol=DEJ2000 --acol=a --bcol=b --pacol=pa --fluxcol=S_200 --alphacol=alpha
 fi
 calmodel="${obsnum}_local_gleam_model.txt"
-# cat "${fora}" >> "${calmodel}"
+cat "${pica}" >> "${calmodel}"
 
 cd "${datadir}/${obsnum}" || exit
 
