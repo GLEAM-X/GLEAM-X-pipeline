@@ -84,7 +84,7 @@ else
     jobarray=''
 fi
 
-queue="-p ${GXSTANDARDQ}"
+queue="-p debug"
 datadir="${GXSCRATCH}/$project"
 
 # set dependency
@@ -123,7 +123,7 @@ chmod 755 "${script}"
 echo '#!/bin/bash' > ${script}.sbatch
 echo "srun ${GXSRUNLINE} singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
-sub="sbatch --begin=now --export=ALL  --time=04:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
+sub="sbatch --begin=now --export=ALL  --time=01:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
 sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
 if [[ ! -z ${tst} ]]
 then
