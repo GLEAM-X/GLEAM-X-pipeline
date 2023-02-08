@@ -74,13 +74,13 @@ then
                 ${obsnum}.ms \
                 "${calfile}"
     datacolumn="CORRECTED_DATA"
-    subtrmodel \
-                -mwapath $GXMWAPB \
-                -datacolumn "MODEL_DATA" \
-                -applybeam \
-                -s \
-                ${obsnum}_local_gleam_model.txt \
-                ${obsnum}.ms
+    # subtrmodel \
+    #             -mwapath $GXMWAPB \
+    #             -datacolumn "MODEL_DATA" \
+    #             -applybeam \
+    #             -s \
+    #             ${obsnum}_local_gleam_model.txt \
+    #             ${obsnum}.ms
 # If in production mode, apply to the DATA column
 else
     applysolutions \
@@ -92,30 +92,30 @@ fi
 
 
 # Do rough model subtrack image if in debug mode: 
-if [[ ! -z $debug ]]
-then
-    # TODO: Currently just assuming its LB since all GX should be but update 
+# if [[ ! -z $debug ]]
+# then
+#     # TODO: Currently just assuming its LB since all GX should be but update 
 
-    telescope="MWALB"
-    basescale=0.6
-    imsize=8000
-    robust=0.5
-    chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
-    scale=$(echo "$basescale / $chan" | bc -l)
-    wsclean \
-            -abs-mem ${GXMEMORY} \
-            -j 12 \
-            -multiscale \
-            -multiscale-gain 0.15 \
-            -nmiter 1 \
-            -niter 0 \
-            -name ${obsnum}_presub_${imext} \
-            -size ${imsize} ${imsize} \
-            -scale ${scale:0:8} \
-            -pol I \
-            -data-column ${datacolumn} \
-            -nwlayers ${GXNCPUS} \
-            "${obsnum}.ms"
+#     telescope="MWALB"
+#     basescale=0.6
+#     imsize=8000
+#     robust=0.5
+#     chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+#     scale=$(echo "$basescale / $chan" | bc -l)
+#     wsclean \
+#             -abs-mem ${GXMEMORY} \
+#             -j 12 \
+#             -multiscale \
+#             -multiscale-gain 0.15 \
+#             -nmiter 1 \
+#             -niter 0 \
+#             -name ${obsnum}_presub_${imext} \
+#             -size ${imsize} ${imsize} \
+#             -scale ${scale:0:8} \
+#             -pol I \
+#             -data-column ${datacolumn} \
+#             -nwlayers ${GXNCPUS} \
+#             "${obsnum}.ms"
 
 # pols="XX XXi XY XYi YX YXi YY YYi"
 
@@ -135,44 +135,44 @@ then
 #     done
 # done
 
-    wsclean \
-            -abs-mem ${GXMEMORY} \
-            -j 12 \
-            -multiscale \
-            -multiscale-gain 0.15 \
-            -nmiter 1 \
-            -niter 0 \
-            -name ${obsnum}_modelcol_${imext} \
-            -size ${imsize} ${imsize} \
-            -scale ${scale:0:8} \
-            -pol I \
-            -data-column "MODEL_DATA" \
-            -nwlayers ${GXNCPUS} \
-            "${obsnum}.ms"
+#     wsclean \
+#             -abs-mem ${GXMEMORY} \
+#             -j 12 \
+#             -multiscale \
+#             -multiscale-gain 0.15 \
+#             -nmiter 1 \
+#             -niter 0 \
+#             -name ${obsnum}_modelcol_${imext} \
+#             -size ${imsize} ${imsize} \
+#             -scale ${scale:0:8} \
+#             -pol I \
+#             -data-column "MODEL_DATA" \
+#             -nwlayers ${GXNCPUS} \
+#             "${obsnum}.ms"
 
-    subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
+#     subtrmodel -usemodelcol -datacolumn "CORRECTED_DATA" "MODEL_DATA" ${obsnum}.ms
 
-    telescope="MWALB"
-    basescale=0.6
-    imsize=8000
-    robust=0.5
-    chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
-    scale=$(echo "$basescale / $chan" | bc -l)
-    wsclean \
-            -abs-mem ${GXMEMORY} \
-            -j 12 \
-            -multiscale \
-            -multiscale-gain 0.15 \
-            -nmiter 1 \
-            -niter 0 \
-            -name ${obsnum}_postsub_${imext} \
-            -size ${imsize} ${imsize} \
-            -scale ${scale:0:8} \
-            -pol I \
-            -data-column ${datacolumn} \
-            -nwlayers ${GXNCPUS} \
-            "${obsnum}.ms"
-fi
+#     telescope="MWALB"
+#     basescale=0.6
+#     imsize=8000
+#     robust=0.5
+#     chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+#     scale=$(echo "$basescale / $chan" | bc -l)
+#     wsclean \
+#             -abs-mem ${GXMEMORY} \
+#             -j 12 \
+#             -multiscale \
+#             -multiscale-gain 0.15 \
+#             -nmiter 1 \
+#             -niter 0 \
+#             -name ${obsnum}_postsub_${imext} \
+#             -size ${imsize} ${imsize} \
+#             -scale ${scale:0:8} \
+#             -pol I \
+#             -data-column ${datacolumn} \
+#             -nwlayers ${GXNCPUS} \
+#             "${obsnum}.ms"
+# fi
 
 test_fail $?
 
