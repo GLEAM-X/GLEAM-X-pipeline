@@ -84,7 +84,7 @@ else
     jobarray=''
 fi
 
-queue="-p debug"
+queue="-p ${GXSTANDARDQ}"
 datadir="${GXSCRATCH}/$project"
 
 # set dependency
