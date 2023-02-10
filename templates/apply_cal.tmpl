@@ -3,7 +3,7 @@
 pipeuser=PIPEUSER
 obsnum=OBSNUM
 calid=CALID
-imext=IMEXT 
+
 # If obsnum is a file, then we are in an array job
 if [[ -f ${obsnum} ]]
 then
@@ -40,14 +40,6 @@ fi
 base=BASEDIR
 debug=DEBUG
 
-# WSClean suffixes for subchannels and MFS
-subchans="MFS 0000 0001 0002 0003"
-# Minimum uvw for self-calibration (in lambda)
-minuv=75
-# S/N Level at which to choose masked pixels for deepclean
-msigma=3
-# S/N Threshold at which to stop cleaning
-tsigma=1
 
 
 # apply calibration
@@ -73,7 +65,6 @@ then
     applysolutions \
                 ${obsnum}.ms \
                 "${calfile}"
-    datacolumn="CORRECTED_DATA"
 # If in production mode, apply to the DATA column
 else
     applysolutions \
