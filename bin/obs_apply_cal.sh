@@ -4,7 +4,6 @@ usage()
 {
 echo "obs_apply_cal.sh [-p project] [-d dep] [-a account] [-c calid] [-z] [-t] obsnum
   -p project  : project, no default
-  -e imext    : extension name for images 
   -d dep      : job number for dependency (afterok)
   -c calid    : obsid for calibrator.
                 project/calid/calid_*_solutions.bin will be used
@@ -30,7 +29,7 @@ account=
 debug=
 
 # parse args and set options
-while getopts ':tzd:a:c:p:e:' OPTION
+while getopts ':tzd:a:c:p:' OPTION
 do
     case "$OPTION" in
     d)
@@ -41,9 +40,6 @@ do
 	    ;;
     p)
         project=${OPTARG}
-        ;;
-    e)
-        imext=${OPTARG}
         ;;
     z)
         debug=1
@@ -110,7 +106,6 @@ cat "${GXBASE}/templates/apply_cal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                        -e "s:BASEDIR:${base}:g" \
                                        -e "s:DEBUG:${debug}:g" \
                                        -e "s:CALID:${calid}:g" \
-                                       -e "s:IMEXT:${imext}:g" \
                                        -e "s:PIPEUSER:${pipeuser}:g"  > ${script}
 
 chmod 755 "${script}"
@@ -134,7 +129,7 @@ then
     GXNCPULINE="--ntasks-per-node=1"
 fi
 
-sub="sbatch --begin=now  --export=ALL ${account} --time=05:00:00 --mem=24G -M ${GXCOMPUTER} --output=${output} --error=${error} "
+sub="sbatch --begin=now+5minutes  --export=ALL ${account} --time=05:00:00 --mem=24G -M ${GXCOMPUTER} --output=${output} --error=${error} "
 sub="${sub}  ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
 
 if [[ ! -z ${tst} ]]
