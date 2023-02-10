@@ -44,9 +44,7 @@ fraction=FRACTION
 sthresh=STHRESH
 
 # GLEAM-X sky model
-catfile="${GXBASE}/models/GGSM_updated_MWAmodel.fits"
-# pica="${GXBASE}/models/model-PictorA_2comp.txt"
-# fora="${GXBASE}/models/model-FornaxA_2comp_withalpha.txt"
+catfile="${GXBASE}/models/GGSM_newPicA.fits"
 
 
 # MWA beam information
@@ -95,7 +93,6 @@ then
                 --racol=RAJ2000 --decol=DEJ2000 --acol=a --bcol=b --pacol=pa --fluxcol=S_200 --alphacol=alpha
 fi
 calmodel="${obsnum}_local_gleam_model.txt"
-# cat "${pica}" >> "${calmodel}"
 
 cd "${datadir}/${obsnum}" || exit
 
