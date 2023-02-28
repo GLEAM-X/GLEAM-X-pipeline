@@ -168,26 +168,39 @@ done
 # Set the pipefail so the test_fail does not test for tee
 set -o pipefail
 # Deep clean (for pipeline)
-wsclean \
-        -abs-mem ${GXMEMORY} \
-        $multiscale \
-        -nmiter 5 \
-        -niter 10000000 \
-        -reuse-primary-beam \
-        -apply-primary-beam \
-        -auto-mask ${msigma} \
-        -auto-threshold ${tsigma} \
-        -name ${obsnum}_deep \
-        -size ${imsize} ${imsize} \
-        -scale ${scale:0:8} \
-        -weight briggs ${robust} \
-        -pol I \
-        -join-channels \
-        -channels-out 4 \
-        -save-source-list \
-        -fit-spectral-pol 2 \
-        -data-column ${datacolumn} \
-        "${obsnum}.ms" | tee wsclean.log
+# wsclean \
+#         -abs-mem ${GXMEMORY} \
+#         $multiscale \
+#         -nmiter 5 \
+#         -niter 10000000 \
+#         -reuse-primary-beam \
+#         -apply-primary-beam \
+#         -auto-mask ${msigma} \
+#         -auto-threshold ${tsigma} \
+#         -name ${obsnum}_deep \
+#         -size ${imsize} ${imsize} \
+#         -scale ${scale:0:8} \
+#         -weight briggs ${robust} \
+#         -pol I \
+#         -join-channels \
+#         -channels-out 4 \
+#         -save-source-list \
+#         -fit-spectral-pol 2 \
+#         -data-column ${datacolumn} \
+#         "${obsnum}.ms" | tee wsclean.log
+
+wsclean -nmiter 1 -niter 100000 \
+   -scale ${scale:0:8} \
+   -reuse-primary-beam \
+   -apply-primary-beam \
+   -mgain 0.85 \
+   -auto-threshold 8 \
+   -name ${obsnum} \
+   -size ${imsize} ${imsize} \
+   -pol I \
+   -weight briggs ${robust} \
+   -data-column CORRECTED_DATA \
+   ${obsnum}.ms
 
 test_fail $?
 track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"

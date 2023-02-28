@@ -104,7 +104,7 @@ chmod 755 "${script}"
 
 # sbatch submissions need to start with a shebang
 echo '#!/bin/bash' > ${script}.sbatch
-echo "singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
+echo "srun singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
 if [ ! -z ${GXNCPULINE} ]
 then
