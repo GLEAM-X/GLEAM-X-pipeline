@@ -126,18 +126,33 @@ then
     error="${error}_%a"
 fi
 
-# sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > ${script}.sbatch
-echo "srun --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
-
-if [ ! -z ${GXNCPULINE} ]
+if [[ ${GXCOMPUTER} == "garrawarla" ]]
 then
-    # autoflag only needs a single CPU core
-    GXNCPULINE="--ntasks-per-node=1"
+    CPUSPERTASK=5
+    MEMPERTASK=30
+elif [[ ${GXCOMPUTER} == "setonix" ]]
+then 
+    CPUSPERTASK=15
+    MEMPERTASK=30
+else
+    CPUSPERTASK=${GXNCPUS}
+    MEMPERTASK=${GXABSMEMORY}
 fi
 
-sub="sbatch --begin=now+5minutes  --export=ALL ${account} --time=01:00:00 --mem=24G -M ${GXCOMPUTER} --output=${output} --error=${error} "
-sub="${sub}  ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
+
+
+# # sbatch submissions need to start with a shebang
+# echo '#!/bin/bash' > ${script}.sbatch
+# echo "srun --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
+
+# if [ ! -z ${GXNCPULINE} ]
+# then
+#     # autoflag only needs a single CPU core
+#     GXNCPULINE="--ntasks-per-node=1"
+# fi
+
+sub="sbatch --begin=now+5minutes  --export=ALL ${account} --time=01:00:00 -M ${GXCOMPUTER} --output=${output} --error=${error} --cpus-per-task=${CPUSPERTASK} --mem=${MEMPERTASK}G"
+sub="${sub} ${account} ${jobarray} ${depend} ${queue} ${script}"
 
 if [[ ! -z ${tst} ]]
 then
