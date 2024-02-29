@@ -165,9 +165,9 @@ secdondintend=$(($ntimesteps*2-1))
 thirdintstart=$(($ntimesteps*2))
 thirdintend=$(($ninterval-1))
 
-timeone="{0..$firstint}"
-timetwo="{$ntimesteps..$secdondintend}"
-timethree="{$thirdintstart..$thirdintend}"
+timeone={0..$firstint}
+timetwo={$ntimesteps..$secdondintend}
+timethree={$thirdintstart..$thirdintend}
 
 
 if [[ ! -z $ion ]]
