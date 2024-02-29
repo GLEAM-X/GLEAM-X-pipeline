@@ -157,7 +157,7 @@ maxuvm=$(echo "390000 / (${chan} + 11)" | bc -l)
 # Check for observations that aren't exactly 2min: 
 nscans=$(singularity run $GXCONTAINER pyhead.py -p NSCANS "${metafits}" | awk '{print $3}')
 ninterval=$(echo "$nscans*$timeres" | bc)
-timesteps=$(($ninterval/3))
+timesteps=$(echo "$ninterval/3" | bc)
 echo "Detected $ninterval so using $ntimesteps per io triage" 
 
 # firstint=$(($ntimesteps-1))
