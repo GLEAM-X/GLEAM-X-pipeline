@@ -251,7 +251,7 @@ then
     echo "Ionospheric calibration finished. Creating plots and statistics. "
 
 
-    singularity run ${GXCONTAINER} python ${GXBASE}/gleam_x/bin/aocal_diff.py --metafits="${metafits}" --names --lastsol "${solutions}" "${solutions1}" --refant="${refant}"
+    singularity run ${GXCONTAINER} python ${GXBASE}/gleam_x/bin/aocal_diff.py --metafits="${metafits}" --names "${solutions1}" --refant="${refant}"
     singularity run ${GXCONTAINER} iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
 fi
 
