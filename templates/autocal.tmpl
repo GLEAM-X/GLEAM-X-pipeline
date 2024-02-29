@@ -182,7 +182,7 @@ then
     srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --max-iterations 500 \
-        --timesteps $timeone \
+        --timesteps {0..$firstint} \
         --num-sources 1000 \
         --uvw-min "${minuv}lambda" \
         --uvw-max 1667lambda \
@@ -205,7 +205,7 @@ then
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
     srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
-        --timesteps $timetwo \
+        --timesteps {$ntimesteps..$secdondintend} \
         --max-iterations 500 \
         --num-sources 1000 \
         --uvw-min "${minuv}lambda" \
@@ -228,7 +228,7 @@ then
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
     srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
-        --timesteps $timethree \
+        --timesteps {$thirdintstart..$thirdintend} \
         --max-iterations 500 \
         --num-sources 1000 \
         --uvw-min "${minuv}lambda" \
