@@ -156,9 +156,11 @@ maxuvm=$(echo "390000 / (${chan} + 11)" | bc -l)
 
 # Check for observations that aren't exactly 2min: 
 nscans=$(singularity run $GXCONTAINER pyhead.py -p NSCANS "${metafits}" | awk '{print $3}')
-ninterval=$(echo "$nscans*$timeres" | bc)
+ninterval=$(echo "$nscans*0.5/$timeres" | bc)
 timesteps=$(echo "$ninterval/3" | bc)
-echo "Detected $ninterval so using $ntimesteps per io triage" 
+timesecs=$(echo "$timesteps*4" | bc)
+echo "Detected $ninterval so using $timesecs seconds per io triage" 
+
 
 # firstint=$(($ntimesteps-1))
 # secdondintend=$(($ntimesteps*2-1))
@@ -182,7 +184,7 @@ then
     srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --max-iterations 500 \
-        --timesteps-per-timeblock ${timesteps}s \
+        --timesteps-per-timeblock ${timesecs}s \
         --num-sources 1000 \
         --uvw-min "${minuv}lambda" \
         --uvw-max 1667lambda \
