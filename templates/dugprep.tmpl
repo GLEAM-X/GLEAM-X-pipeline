@@ -12,7 +12,7 @@ cd $basedir
 # DOWNLOAD FROM ACACIA 
 # -----------------------------------------------------------------------------
 
-rclone copy --progress --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}
+rclone copy --progress --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
 
 # -----------------------------------------------------------------------------
 # UNTAR OBSIDS AND MAKE NICE DIRECTORY STRUCTURE
@@ -300,3 +300,5 @@ do
     fi
 
     singularity run $GXCONTAINER flagantennae ${obsnum}.ms $flags
+
+done 
