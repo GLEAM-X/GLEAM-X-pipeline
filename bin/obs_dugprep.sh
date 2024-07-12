@@ -65,8 +65,8 @@ if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
     echo "submit via:"
-    echo ". ${script}"
+    echo "./${script} | tee ${script}.log"
     exit 0
 fi
 
-
+source ${script} | tee ${script}.log
