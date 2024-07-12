@@ -36,7 +36,7 @@ freqres=
 edgeflag=80
 dug=
 # parse args and set options
-while getopts ':tgu:d:p:s:k:o:f:e:' OPTION
+while getopts ':tgud:p:s:k:o:f:e:' OPTION
 do
     case "$OPTION" in
     d)
@@ -52,7 +52,7 @@ do
     t)
         tst=1 ;;
     u)
-        dug=${OPTARG} ;;
+        dug=1 ;;
     g)
         gpubox=1 ;;
     f)
