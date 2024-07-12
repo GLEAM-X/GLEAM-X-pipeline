@@ -21,7 +21,7 @@ project=
 tst=
 acacia=
 # parse args and set options
-while getopts ':t:a:p:' OPTION
+while getopts ':ta:p:' OPTION
 do
     case "$OPTION" in
     a)
@@ -30,12 +30,12 @@ do
     p)
         project=${OPTARG}
         ;;
-	t)
-	    tst=1
-	    ;;
-	? | : | h)
-	    usage
-	    ;;
+    t)
+        tst=1
+        ;;
+    ? | : | h)
+        usage
+        ;;
   esac
 done
 # set the obsid to be the first non option
@@ -44,8 +44,7 @@ obslist=$1
 
 # if obsid is empty then just print help
 
-if [[ -z ${obslist} ]] || [[ -z $project ]] || [[ ! -d ${base} ]]
-then
+if [[ -z ${obslist} ]] || [[ -z $project ]] 
     usage
 fi
 
@@ -53,10 +52,11 @@ fi
 base="${GXSCRATCH}/$project"
 # code="${GXBASE}"
 
+
 script="${GXSCRIPT}/dugprep_${obslist}.sh"
 cat "${GXBASE}/templates/dugprep.tmpl" | sed -e "s:OBSLIST:${obslist}:g" \
                                  -e "s:BASEDIR:${base}:g" \
-                                 -e "s:ACACIA:${acacia}:g" > "${script}"
+                                 -e "s:BUCKET:${acacia}:g" > "${script}"
 
 chmod 755 "${script}"
 
