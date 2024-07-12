@@ -317,6 +317,7 @@ def wsclean_script(
     metafits: str,
     outpath: str = None,
     corrected_data: bool = False,
+    tempdir: str = "",
 ):
     obsid = metafits.replace(".metafits", "")
     outpath = outpath if outpath is not None else "casa_script.casa"
@@ -332,17 +333,17 @@ def wsclean_script(
         ):
             datacolumn = "DATA" if corrected_data is False else "CORRECTED_DATA"
 
-            taql = f"taql alter table {obsid}.ms drop column MODEL_DATA\n\n"
+            taql = f"taql alter table ${tempdir}/{obsid}.ms drop column MODEL_DATA\n\n"
             out.write(taql)
 
             chg = (
                 f"chgcentre "
-                f"{obsid}.ms "
+                f"${tempdir}/{obsid}.ms "
                 f"{phasecenter.replace('J2000 ', '')} \n"
                 f"chgcentre "
                 f"-zenith "
                 f"-shiftback "
-                f"{obsid}.ms \n\n"
+                f"${tempdir}/{obsid}.ms \n\n"
             )
             out.write(chg)
 
@@ -352,13 +353,14 @@ def wsclean_script(
                 f"-mgain 0.8 -abs-mem {mem} -nmiter 10 -niter 100000 -size 128 128 -pol XXYY "
                 f"-data-column {datacolumn} -name {imagename} -scale 10arcsec "
                 f"-weight briggs 0.5  -auto-mask 3 -auto-threshold 1 "
+                f"-temp-dir ${tempdir}/ "
                 f" {spec_fit} "
-                f"{obsid}.ms \n\n"
+                f"${tempdir}/{obsid}.ms \n\n"
             )
             out.write(wsclean)
 
             taql = (
-                f"taql update {obsid}.ms set {datacolumn}={datacolumn}-MODEL_DATA\n\n"
+                f"taql update ${tempdir}/{obsid}.ms set {datacolumn}={datacolumn}-MODEL_DATA\n\n"
             )
             out.write(taql)
 
@@ -367,12 +369,12 @@ def wsclean_script(
 
         chg = (
             f"chgcentre "
-            f"{obsid}.ms "
+            f"${tempdir}/{obsid}.ms "
             f"$coords \n"
             f"chgcentre "
             f"-zenith "
             f"-shiftback "
-            f"{obsid}.ms \n\n"
+            f"${tempdir}/{obsid}.ms \n\n"
         )
         out.write(chg)
 
@@ -382,6 +384,7 @@ def ateam_model_creation(
     metafits_file,
     mode,
     ggsm=None,
+    tempdir="",
     search_radius=10 * u.arcminute,
     min_flux=0.0,
     check_fov=False,
@@ -395,6 +398,7 @@ def ateam_model_creation(
     corrected_data: bool = False,
     source_txt_path: str = None,
 ):
+
     """Search around known A-Team sources for components in the GGSM, and create
     a corresponding model in Andre's formation for use in mwa_reduce tasks.
 
@@ -525,6 +529,7 @@ def ateam_model_creation(
                 metafits_file,
                 outpath=model_output,
                 corrected_data=corrected_data,
+                tempdir=tempdir
             )
         else:
             with open(model_output, "w") as out_file:
@@ -534,7 +539,7 @@ def ateam_model_creation(
     return None
 
 
-def attach_units_or_None(param, to_unit) -> Tuple["u", None]:
+def attach_units_or_None(param, to_unit) -> Tuple[u.Quantity, None]:
     """Test is params is set, and if it is not None multiple the unit
 
     Args:
@@ -553,6 +558,11 @@ if __name__ == "__main__":
         GGSM = f"{os.environ['GXBASE']}/models/GGSM.fits"
     except:
         GGSM = ""
+
+    try: 
+        tempdir = f"{os.environ['GXTEMP']}"
+    except:
+        tempdir = ""
 
     parser = ArgumentParser(description="Simple test script to figure out peeling")
     parser.add_argument("metafits", nargs="+", help="metafits file of observation")
@@ -636,6 +646,12 @@ if __name__ == "__main__":
         type=str,
         help="A path to a user defined CSV list of sources. Each line source be name,ra,dec,s_150,alpha,beta. ",
     )
+    parser.add_argument(
+        "--tempdir",
+        default=tempdir,
+        type=str,
+        help="wsclean is way faster if you use ramdisk or nvme, do you want me to put temp files and/or the ms there too? If so what's te tempdir, default will be GXTEMP",        
+    )
     args = parser.parse_args()
 
     args.search_radius = attach_units_or_None(args.search_radius, u.arcminute)
@@ -648,6 +664,7 @@ if __name__ == "__main__":
             args.mode,
             ggsm=args.ggsm,
             search_radius=args.search_radius,
+            tempdir=args.tempdir,
             min_flux=args.min_flux,
             check_fov=args.check_fov,
             model_output=args.model_output,
