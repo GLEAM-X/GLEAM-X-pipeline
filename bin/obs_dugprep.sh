@@ -45,6 +45,7 @@ obslist=$1
 # if obsid is empty then just print help
 
 if [[ -z ${obslist} ]] || [[ -z $project ]] 
+then
     usage
 fi
 
