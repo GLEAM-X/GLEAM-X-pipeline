@@ -52,7 +52,7 @@ do
     t)
         tst=1 ;;
     u)
-        dug=1 ;;
+        dug=${OPTARG} ;;
     g)
         gpubox=1 ;;
     f)
