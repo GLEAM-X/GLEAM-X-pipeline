@@ -317,7 +317,7 @@ def wsclean_script(
     metafits: str,
     outpath: str = None,
     corrected_data: bool = False,
-    tempdir: str = "",
+    tempdir: str = "./",
 ):
     obsid = metafits.replace(".metafits", "")
     outpath = outpath if outpath is not None else "casa_script.casa"
@@ -562,7 +562,7 @@ if __name__ == "__main__":
     try: 
         tempdir = f"{os.environ['GXTEMP']}"
     except:
-        tempdir = ""
+        tempdir = "./"
 
     parser = ArgumentParser(description="Simple test script to figure out peeling")
     parser.add_argument("metafits", nargs="+", help="metafits file of observation")
