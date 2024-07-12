@@ -5,6 +5,7 @@ usage()
 echo "obs_manta.sh [-p project] [-d dep] [-s timeave] [-k freqav] [-t] -o list_of_observations.txt
   -d dep      : job number for dependency (afterok)
   -p project  : project, (must be specified, no default)
+  -u dug      : Do you want this for dug prep? Send to acacia? 
   -s timeres  : time resolution in sec. default = 2 s
   -k freqres  : freq resolution in KHz. default = 40 kHz
   -f edgeflag : number of edge band channels flagged. default = 80
@@ -33,9 +34,9 @@ gpubox=
 timeres=
 freqres=
 edgeflag=80
-
+dug=
 # parse args and set options
-while getopts ':tgd:p:s:k:o:f:e:' OPTION
+while getopts ':tugd:p:s:k:o:f:e:' OPTION
 do
     case "$OPTION" in
     d)
@@ -50,6 +51,8 @@ do
 	    obslist=${OPTARG} ;;
     t)
         tst=1 ;;
+    u)
+        dug=1 ;;
     g)
         gpubox=1 ;;
     f)
@@ -127,6 +130,7 @@ script="${GXSCRIPT}/manta_${listbase}.sh"
 cat "${GXBASE}/templates/manta.tmpl" | sed -e "s:OBSLIST:${obslist}:g" \
                                  -e "s:STEM:${stem}:g"  \
                                  -e "s:TRES:${timeres}:g" \
+                                 -e "s:DUG:${dug}:g" \
                                  -e "s:FRES:${freqres}:g" \
                                  -e "s:BASEDIR:${base}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g" > "${script}"

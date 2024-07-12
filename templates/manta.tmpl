@@ -10,6 +10,7 @@ obslist=OBSLIST
 stem=STEM
 tres=TRES
 fres=FRES
+dug=DUG
 
 # start download
 cd "${base}" || exit 1
@@ -24,101 +25,119 @@ done
 export SSL_VERIFY=0
 mwa_client --csv="${obslist}_manta.tmp" --dir="${base}"
 
-n=1
-for obsnum in $list
-do
-    cd "${base}" || exit 1
-    
-    # files are stored as either
-    # obsnum_jobid_vis.tar
-    # obsnum_jobid_ms.tar
-    # where the jobid refers to the slurm jobid of the mwasvo processing task
-    # and said jobid is not known during obs_mantal.sh template generation.   
-    # obsfile=$(find ./"${obsnum}"_[0-9]*_"${stem}".tar -maxdepth 1 -type f)
-    obsfile=$(echo ./"${obsnum}_"[0-9]*"_${stem}.tar")
-    
-    # Ensure that a file exists before attempting to match to the download mode
-    if [[ ! -e "${obsfile}" ]]
-    then 
-        echo "No file corresponding to obsid ${obsnum} found."
-        track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"    
-    
-    # now process the specific modes
-    elif [[ "${stem}" == "ms" ]]
-    then 
-        if [[ ! -d "${obsnum}" ]]
-        then
-            mkdir "${obsnum}"
-        fi
-
-        cd "${obsnum}" || exit 1
-
-        if [[ -d "${obsnum}.ms" ]]
-        then
-            echo "${obsnum}.ms already exists; please remove directory before running untar job."
-            track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
+if [[ ! -z ${dug} ]]
+then 
+    echo "DUG flag, so just downloading tar and that's all!"
+    for obsnum in $list
+    do
+        cd "${base}" || exit 1
+        obsfile=$(echo ./"${obsnum}_"[0-9]*"_${stem}.tar")
+        if [[ ! -e "${obsfile}" ]]
+        then 
+            echo "No file corresponding to obsid ${obsnum} found."
+            track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"   
         else
-            mv "../${obsfile}" ./ 
-            tar xf "${obsfile}"
-            
-            # Ensure that tar operation was successful
-            if [[ $? ]]
+            echo "have tar file for ${obsnum}!"
+        fi
+    done
+    # exit 0
+else
+    n=1
+    for obsnum in $list
+    do
+        cd "${base}" || exit 1
+        
+        # files are stored as either
+        # obsnum_jobid_vis.tar
+        # obsnum_jobid_ms.tar
+        # where the jobid refers to the slurm jobid of the mwasvo processing task
+        # and said jobid is not known during obs_mantal.sh template generation.   
+        # obsfile=$(find ./"${obsnum}"_[0-9]*_"${stem}".tar -maxdepth 1 -type f)
+        obsfile=$(echo ./"${obsnum}_"[0-9]*"_${stem}.tar")
+        
+        # Ensure that a file exists before attempting to match to the download mode
+        if [[ ! -e "${obsfile}" ]]
+        then 
+            echo "No file corresponding to obsid ${obsnum} found."
+            track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"    
+        
+        # now process the specific modes
+        elif [[ "${stem}" == "ms" ]]
+        then 
+            if [[ ! -d "${obsnum}" ]]
             then
-                rm "${obsfile}"
-                track_task.py finish --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
-            
-                # At the moment birli does not do edge channel flagging. Use flagmwa to do this
-                # for us now. The time and freq resolution parameters are used only for this operation and
-                # can be removed once birli reaches feature parity with cotter. Note that
-                # this is not robust to a change in MWA configuration in the same request. If
-                # a separate set of time and frequency resolutions are required between obsids
-                # in the same mwa_client request flagging may be incorrectly. Note however 
-                # this is consistent with the implicit assumption made in the obs_mantra.sh script
-                # anyway (timeres and freqres are in a loop and testing for not empty)
-                if [[ ${obsnum} -ge 1314921618 ]]
-                then 
-                    echo "Applying flagmwa"
-                    nfreqchan=$(echo "80 / $fres" | bc )
-                    nsubbands=24
+                mkdir "${obsnum}"
+            fi
 
-                    # Andrew Williams suggests the worst case the the typical worst case for
-                    # attenuators to settle is 2.5 seconds. 
-                    ntsquack=1
-                    if (( $(echo "$tres < 2.5" | bc -l) ))
+            cd "${obsnum}" || exit 1
+
+            if [[ -d "${obsnum}.ms" ]]
+            then
+                echo "${obsnum}.ms already exists; please remove directory before running untar job."
+                track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
+            else
+                mv "../${obsfile}" ./ 
+                tar xf "${obsfile}"
+                
+                # Ensure that tar operation was successful
+                if [[ $? ]]
+                then
+                    rm "${obsfile}"
+                    track_task.py finish --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
+                
+                    # At the moment birli does not do edge channel flagging. Use flagmwa to do this
+                    # for us now. The time and freq resolution parameters are used only for this operation and
+                    # can be removed once birli reaches feature parity with cotter. Note that
+                    # this is not robust to a change in MWA configuration in the same request. If
+                    # a separate set of time and frequency resolutions are required between obsids
+                    # in the same mwa_client request flagging may be incorrectly. Note however 
+                    # this is consistent with the implicit assumption made in the obs_mantra.sh script
+                    # anyway (timeres and freqres are in a loop and testing for not empty)
+                    if [[ ${obsnum} -ge 1314921618 ]]
                     then 
-                        # this should flag all potential time intervals, including a potential
-                        # wrap needed for the integer to work out correctly
-                        ntsquack=$(echo "(2.5+$tres)/$tres" | bc)
+                        echo "Applying flagmwa"
+                        nfreqchan=$(echo "80 / $fres" | bc )
+                        nsubbands=24
+
+                        # Andrew Williams suggests the worst case the the typical worst case for
+                        # attenuators to settle is 2.5 seconds. 
+                        ntsquack=1
+                        if (( $(echo "$tres < 2.5" | bc -l) ))
+                        then 
+                            # this should flag all potential time intervals, including a potential
+                            # wrap needed for the integer to work out correctly
+                            ntsquack=$(echo "(2.5+$tres)/$tres" | bc)
+                        fi
+
+                        echo "Flagging ${nfreqchan} edge channels across ${nsubbands} sub-bands, and quacking ${ntsquack} timesteps"
+
+                        flagmwa \
+                            "${obsnum}.ms" \
+                            $ntsquack \
+                            $nsubbands \
+                            1 \
+                            $nfreqchan 
                     fi
 
-                    echo "Flagging ${nfreqchan} edge channels across ${nsubbands} sub-bands, and quacking ${ntsquack} timesteps"
-
-                    flagmwa \
-                        "${obsnum}.ms" \
-                        $ntsquack \
-                        $nsubbands \
-                        1 \
-                        $nfreqchan 
+                else
+                    echo "Failed to untar ${obsfile}"
+                    track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
                 fi
-
-            else
-                echo "Failed to untar ${obsfile}"
-                track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
-            fi
-            cd ../
-        fi    
-    elif [[ "$stem" == 'vis' ]]
-    then
-        echo "${obsfile} downloaded successfully; now run cotter."
-        track_task.py finish --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
-        track_task.py obs_status --obs_id="${obsnum}" --status='downloaded'
-    elif [[ "$stem" == 'astro' ]]
-    then 
-        echo "astro delivery mode not yet supported by obs_mantra. "
-        track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
-    else
-        echo "No operation available for ${stem} mode for obsid ${obsnum}."
-        track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
-    fi
-    ((n+=1))
+                cd ../
+            fi    
+        elif [[ "$stem" == 'vis' ]]
+        then
+            echo "${obsfile} downloaded successfully; now run cotter."
+            track_task.py finish --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
+            track_task.py obs_status --obs_id="${obsnum}" --status='downloaded'
+        elif [[ "$stem" == 'astro' ]]
+        then 
+            echo "astro delivery mode not yet supported by obs_mantra. "
+            track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
+        else
+            echo "No operation available for ${stem} mode for obsid ${obsnum}."
+            track_task.py fail --jobid="${SLURM_JOBID}" --taskid="${n}" --finish_time="$(date +%s)"
+        fi
+        ((n+=1))
+    done
 done
