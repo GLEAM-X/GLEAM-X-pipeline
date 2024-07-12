@@ -1,0 +1,302 @@
+#! /bin/bash -l
+
+pipeuser=PIPEUSER
+obslist=OBSLIST
+basedir=BASEDIR
+acacia=ACACIA
+
+echo ${GXUSER}
+cd $basedir
+
+# -----------------------------------------------------------------------------
+# DOWNLOAD FROM ACACIA 
+# -----------------------------------------------------------------------------
+
+rclone copy --progress --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}
+
+# -----------------------------------------------------------------------------
+# UNTAR OBSIDS AND MAKE NICE DIRECTORY STRUCTURE
+# -----------------------------------------------------------------------------
+
+list=$(awk '{print substr($1,8,10)}' < "${obslist}_manta.tmp")
+n=1
+for obsnum in $list
+do 
+    cd $basedir 
+    obsfile=$(echo ./"${obsnum}_"[0-9]*"_${stem}.tar")
+    if [[ ! -d "${obsnum}" ]]
+    then
+        mkdir "${obsnum}"
+    fi
+
+    cd $obsnum
+    mv "../${obsfile}" ./ 
+    tar xf "${obsfile}" 
+    if [[ $? ]]
+    then
+        rm "${obsfile}"
+    fi
+done 
+# -----------------------------------------------------------------------------
+# RUN FLAGMWA (IF NEEDED) AND FLAGANTENNA 
+# -----------------------------------------------------------------------------
+
+for obsnum in $list
+do
+    flags=""
+    # Tiles 72 and 76 intermittently dodgy in 2013/4
+    if [[ ${obsnum} -ge 1060000000 ]] && [[ ${obsnum} -le 1070000000 ]]
+    then
+        flags="$flags 72 76"
+    fi
+
+    # Rx6 has a fibre problem on the nights of 2014-03-03 to 06
+    if [[ ${obsnum} -ge 1077300000 ]] && [[ ${obsnum} -le 1078175704 ]]
+    then
+        flags="$flags 40 41 42 43 44 45 46 47"
+    fi
+
+    # Tile 54 is AAVS or otherwise broken for September 2014
+    # Tiles 81 and 85 are intermittently broken for the same period
+    if [[ ${obsnum} -gt 1090000000 ]] && [[ ${obsnum} -lt 1110000000 ]]
+    then
+        flags="$flags 35 56 60"
+    fi
+
+    # Receiver 15 is broken for June 2014
+    if [[ ${obsnum} -gt 1086300000 ]] && [[ ${obsnum} -lt 1087200000 ]]
+    then
+    flags="$flags 112 113 114 115 116 117 118 119"
+    fi
+
+    # Rx6 has a fibre problem on the night of 
+    if [[ ${obsnum} -ge 1102700000 ]] && [[ ${obsnum} -le 1102800000 ]]
+    then
+        flags="$flags 40 41 42 43 44 45 46 47"
+    fi
+
+    # Tile index 107 is broken for night of 2014-12-17
+    if [[ $obsnum -ge 1102813728 ]] && [[ $obsnum -le 1102892032 ]]
+    then
+        flags="$flags 107"
+    fi
+
+    # Tile index 56 is broken for night of 2015-03-31
+    if [[ $obsnum -ge 1111654944 ]] && [[ $obsnum -le 1111879432 ]]
+    then
+        flags="$flags 56"
+    fi
+
+    # Rx14 is broken on the night of 2015-07-05
+    if [[ $obsnum -ge 1120120344 ]] && [[ $obsnum -le 1120175880 ]]
+    then
+        flags="$flags 104 105 106 107 108 109 110 111"
+    fi
+
+    # Rx6 and all of Tiles 71 and 101 are bad for the 2016 July GLEAM data
+    if [[ ${obsnum} -gt 1153600000 ]] && [[ ${obsnum} -lt 1157000000 ]]
+    then
+        flags="$flags 40 41 42 43 44 45 46 47 48 72"
+    fi
+
+    # Most long-baseline observations have problems with these two antennas
+    if [[ $obsnum -gt 1151402936 ]]
+    then
+        flags="$flags 76 80"
+    fi
+
+    # Late 2017 Tile 40 wasn't great
+    if [[ ${obsnum} -gt 1170100000 ]] && [[ $obsnum -lt 1170200000 ]]
+    then
+        flags="$flags 40"
+    fi
+
+    # In January 2018, tile indices 60, 63, and 84 do not look good
+    if [[ ${obsnum} -gt 1198800128 ]] && [[ $obsnum -lt 1201400000 ]]
+    then
+        flags="$flags 60 63 84"
+    fi
+
+    # On 09 to 11 Jan 2018, tile index 72 is not happy
+    if [[ ${obsnum} -gt 1199500000 ]] && [[ $obsnum -lt 1200000000 ]]
+    then
+        flags="$flags 72"
+    fi
+
+    if [[ ${obsnum} -gt 1210327216 ]] && [[ $obsnum -lt 1210370720 ]]
+    then 
+        flags="$flags 22"
+    fi 
+
+    # Rx7 has fibre problem throughout March 2018
+    if [[ $obsnum -ge 1203300000 ]] && [[ $obsnum -le 1205500000 ]]
+    then
+        flags="$flags 48 49 50 51 52 53 54 55"
+    fi
+
+    # Rx7 broken on 2018-03-01 to later in March, as well as first tile of Rx8; and tile indices 60 and 63 also behave weirdly -- one polarisation has totally different calibration, as if it's not pointing correctly. Tile 101 also throws off calibration for some observations.
+    if [[ $obsnum -ge 1203937000 ]] && [[ $obsnum -le 1204900000 ]]
+    then
+        flags="$flags 48 49 50 51 52 53 54 55 56 60 63 101"
+    fi
+
+    # Tile indices 72 and 84 have zero amplitudes during May 2018
+    if [[ $obsnum -ge 1200000000 ]] && [[ $obsnum -le 1220000000 ]]
+    then
+        flags="$flags 72 84"
+    fi
+
+    # Tile index 22 is broken on the night of 2018-05-19
+    if [[ $obsnum -ge 1210723232 ]] && [[ $obsnum -le 1210809392 ]]
+    then
+        flags="$flags 22"
+    fi
+
+    # Something seems off consistent for Tile 123 and  56 later in night on 2019-02-01
+    if [[ $obsnum -ge 1233055624 ]] && [[ $obsnum -le 1233090904 ]]
+    then
+        flags="$flags 123 56"
+    fi
+
+
+    # Rx7 has a fibre problem on 2019-01-08 and 2019-06
+    if [[ $obsnum -ge 1244300000 ]] && [[ $obsnum -le 1244849032 ]]
+    then
+        flags="$flags 48 49 50 51 52 53 54 55"
+    fi
+
+    # Just noticing the tile 72 seems a bit off each time, may expand limits
+    if [[ $obsnum -ge 1285326784 ]] && [[ $obsnum -le 1287693296 ]]
+    then
+        flags="$flags 72 84"
+    fi
+
+    # 48 seems consistently gross on this 2020-10-12
+    if [[ $obsnum -ge 1286536080 ]] && [[ $obsnum -le 1286571360 ]]
+    then
+        flags="$flags 48"
+    fi
+
+
+    # 2020-10-05 seems to have a couple off antennas, flagging for good measure but may expand
+    if [[ $obsnum -ge 1285326784 ]] && [[ $obsnum -le 1287693296 ]]
+    then
+        flags="$flags 103 72"
+    fi
+
+    # Noticed tile 84 acting a bit off, so far just this night but may expand
+    if [[ $obsnum -ge 1287659216 ]] && [[ $obsnum -le 1287693296 ]]
+    then 
+        flags="$flags 84"
+    fi
+
+    # Loads of receiver problems on 21st April 2021!
+    if [[ $obsnum -ge 1302970000 ]] && [[ $obsnum -le 1303130000 ]]
+    then
+        flags="$flags 40 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120"
+    fi
+
+    # Tile 84 seems to be pretty ratty. May expand these limits. 
+    if [[ $obsnum -ge 1285758208 ]] && [[ $obsnum -le 1287607136 ]]
+    then 
+        flags=" $flags 84 "
+    fi
+
+    # 2022-A -- new extended array with an extra receiver and some tiles missing
+    if [[ $obsnum -gt 1338220000 ]] && [[ $obsnum -lt 1350000000 ]]
+    then
+        flags=" $flags 84 97 113"
+    fi
+
+    # 2022-07-15 -- more tiles back in, but some weirdness remains
+    if [[ $obsnum -gt 1341900000 ]] && [[ $obsnum -lt 1342000000 ]]
+    then
+        flags=" $flags 96 97 98 99 100 101 102 103 128 130 135"
+    fi
+
+    # 2022-07-16 -- more tiles back in, but some (different!) weirdness remains
+    if [[ $obsnum -gt 1342000000 ]] && [[ $obsnum -lt 1342090000 ]]
+    then
+        flags=" $flags 72 73 74 75 76 77 78 79 80 130"
+    fi
+    # 2022-07-17 -- everything works again??
+
+    # 2022-07-22 -- just one weird tile? But it's an absolute BEAST Actually bad for weeks...
+    if [[ $obsnum -gt 1342500000 ]] && [[ $obsnum -lt 1345000000 ]]
+    then
+        flags=" $flags 92"
+    fi
+
+    # 2022-07-25 -- more intermittent weirdness
+    if [[ $obsnum -gt 1342780000 ]] && [[ $obsnum -lt 1342810000 ]]
+    then
+        flags=" $flags 130 131 132 134"
+    fi
+
+    # 2022-07-30
+    if [[ $obsnum -gt 1343174512 ]] && [[ $obsnum -lt 1343260480 ]]
+    then
+        flags=" $flags 62 128 132"
+    fi
+
+    # 2022-08-03 until... who knows, let's guess -08-05
+    if [[ $obsnum -gt 1343492000 ]] && [[ $obsnum -lt 1343824000 ]]
+    then
+        flags=" $flags 114"
+    fi
+
+    # 2022-08-07
+    if [[ $obsnum -gt 1343700000 ]] && [[ $obsnum -lt 1344000000 ]]
+    then
+        flags=" $flags 24 25 26 27 28 29 30 31"
+    fi
+
+    # 2022-08-10
+    if [[ $obsnum -gt 1344100000 ]] && [[ $obsnum -lt 1344400000 ]]
+    then
+        flags=" $flags 62 88"
+    fi
+
+    # 2022-08-12
+    if [[ $obsnum -gt 1344300000 ]] && [[ $obsnum -lt 1344500000 ]]
+    then
+        flags=" $flags 128 129 130 131 132 133 134 135"
+    fi
+
+    # 2022-08-23 to 25
+    if [[ $obsnum -gt 1345200000 ]] && [[ $obsnum -lt 1345600000 ]]
+    then
+        flags=" $flags 128 129 130 131 132 133 134 135"
+    fi
+
+    # 2022-08-27
+    if [[ $obsnum -gt 1345596000 ]] && [[ $obsnum -lt 1345678000 ]]
+    then
+        flags=" $flags 40 41 42 43 44 45 46 47 128 129 130 131 132 133 134 135"
+    fi
+
+    # 2022-08-28
+    if [[ $obsnum -gt 1345680000 ]] && [[ $obsnum -lt 1345765000 ]]
+    then
+        flags=" $flags 92 128 129 130 131 132 133 134 135"
+    fi
+
+    # 2022-09-01
+    if [[ $obsnum -gt 1346026000 ]] && [[ $obsnum -lt 1346105000 ]]
+    then
+        flags=" $flags 92"
+    fi
+
+    # 2022-09-08/09
+    if [[ $obsnum -gt 1346634500 ]] && [[ $obsnum -lt 1346801200 ]]
+    then
+        flags=" $flags 24 25 26 27 28 29 30 31 72 73 74 75 76 77 78 79 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 128 129 130 131 132 133 134 135"
+    fi
+
+    # 2022-09 late
+    if [[ $obsnum -gt 1351000000 ]] && [[ $obsnum -lt 1353000000 ]]
+    then
+        flags=" $flags 62 84 128 129 130 131 132 133 134 135"
+    fi
+
+    singularity run $GXCONTAINER flagantennae ${obsnum}.ms $flags
