@@ -34,7 +34,8 @@ export GXCOMPUTER=${cluster}    # Maintained for compatability. Describes the na
 export GXCLUSTER=${cluster}     # Maintained for compatability. Describes the name of the cluster, e.g. "magnus".
 export GXSTANDARDQ=      # Slurm queue to submit tasks to, e.g. "workq". Available queues can be inspected using 'sinfo' on a system where the slurm schedular is available
 
-export GXTEMP="/tmp/"
+# NEED TO CHECK WHETHER THEY HAVE THE NVME TEMP OR JUST A TEMP RAMDISK!
+export GXTEMP=
 
 
 # Compute node memory specification
