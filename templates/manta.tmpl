@@ -27,7 +27,7 @@ mwa_client --csv="${obslist}_manta.tmp" --dir="${base}"
 
 if [[ ! -z ${dug} ]]
 then 
-    echo "DUG flag, so just downloading tar and that's all!"
+    echo "You've added the DuG flag, so just downloading tar and that's all!"
     for obsnum in $list
     do
         cd "${base}" || exit 1
@@ -40,6 +40,8 @@ then
             echo "have tar file for ${obsnum}!"
         fi
     done
+    srun -N 1 -c 4 --time=20:00:00 rclone copy --progress --include "*.tar" ${base}/ ${GXACACIA}:${dug}/
+
     # exit 0
 else
     n=1
