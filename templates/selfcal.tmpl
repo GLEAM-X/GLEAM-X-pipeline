@@ -47,8 +47,8 @@ track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date
 
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
-mkdir -p /tmp/${SLURM_JOB_ID}/slurm_wsclean
-cp -rf ${obsnum}.ms /tmp/${SLURM_JOB_ID}/slurm_wsclean
+mkdir -p ${GXTEMP}/${SLURM_JOB_ID}/slurm_wsclean
+cp -rf ${obsnum}.ms ${GXTEMP}/${SLURM_JOB_ID}/slurm_wsclean
 
 # Adding a check to see if there are any selfsolutions already, will not recalculated
 if [[ -e ${obsnum}_selfsolutions.bin ]] || [[ -e ${obsnum}_selfsolutions_failed.bin ]]
@@ -61,10 +61,10 @@ fi
 # Which data column to image
 if [[ ! -z $debug ]]
 then
-    taql update /tmp/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms set DATA=CORRECTED_DATA
+    taql update ${GXTEMP}/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms set DATA=CORRECTED_DATA
 fi
 # Removing any previous model column to make sure its not accidentally included in the model for selfcal
-taql alter table /tmp/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms drop column MODEL_DATA 
+taql alter table ${GXTEMP}/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms drop column MODEL_DATA 
 
 # TODO: replace with find
 metafits="$(ls -t ${obsnum}*metafits* | head -1)"
@@ -165,7 +165,7 @@ then
     wsclean \
             -abs-mem ${GXMEMORY} \
             $multiscale \
-            -temp-dir /tmp/${SLURM_JOB_ID}/slurm_wsclean/ \
+            -temp-dir ${GXTEMP}/${SLURM_JOB_ID}/slurm_wsclean/ \
             -nmiter 1 \
             -niter 40000 \
             -stop-negative \
@@ -176,7 +176,7 @@ then
             -pol XX,YY,XY,YX \
             -channels-out 4 \
             -join-polarizations \
-            "/tmp/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms" | tee wsclean.log
+            "${GXTEMP}/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms" | tee wsclean.log
     
 else
     echo "Already have initial images, not reimaging shallow clean"
@@ -189,7 +189,7 @@ then
     echo 'Initial image did not generate! Something probs happened with WSClean'
     exit 1
 else
-    rm -rf ${obsnum}.ms && cp -rf /tmp/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms ./
+    rm -rf ${obsnum}.ms && cp -rf ${GXTEMP}/${SLURM_JOB_ID}/slurm_wsclean/${obsnum}.ms ./
     calibrate \
             -j ${GXNCPUS} \
             -absmem ${GXABSMEMORY} \
@@ -215,6 +215,6 @@ fi
 
 # clean up all unnecessary images
 
-rm "${obsnum}_initial*.fits"
+rm *initial*fits
 
 track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
