@@ -57,6 +57,10 @@ track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
 
+mkdir -p ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}
+cp -rf ${obsnum}.ms ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/
+
+
 # TODO: replace with find
 metafits="$(ls -t ${obsnum}*metafits* | head -1)"
 
@@ -122,7 +126,7 @@ else
 fi 
 
 # Check whether the phase centre has already changed
-current=$(chgcentre "${obsnum}.ms")
+current=$(chgcentre "${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms")
 
 if [[ $current == *"shift"* ]]
 then
@@ -133,7 +137,7 @@ else
     coords=$(calc_pointing.py "${metafits}")
     echo "Optimally shifting co-ordinates of measurement set to $coords, with zenith shiftback."
     chgcentre \
-            "${obsnum}.ms" \
+            "${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms" \
             ${coords}
 
     # Now shift the pointing centre to point straight up, 
@@ -141,7 +145,7 @@ else
     chgcentre \
             -zenith \
             -shiftback \
-            "${obsnum}.ms"
+            "${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms"
 fi
 
 # Create a template image that has all the same properties as our eventual WSClean image
@@ -149,6 +153,7 @@ if [[ ! -e "${obsnum}_template.fits" ]]
 then
     wsclean \
             -abs-mem ${GXMEMORY} \
+            -temp-dir ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/ \
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
@@ -160,7 +165,7 @@ then
             -channel-range 4 5 \
             -interval 4 5 \
             -nwlayers ${GXNCPUS} \
-            "${obsnum}.ms"
+            "${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms" 
 
     rm "${obsnum}_template-dirty.fits"
     mv "${obsnum}_template-image.fits" "${obsnum}_template.fits"
@@ -191,6 +196,7 @@ set -o pipefail
 # Deep clean (for pipeline)
 wsclean \
         -abs-mem ${GXMEMORY} \
+        -temp-dir ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/ \
         $multiscale \
         $scalebias \
         -nmiter 5 \
@@ -209,9 +215,22 @@ wsclean \
         -save-source-list \
         -fit-spectral-pol 2 \
         -data-column ${datacolumn} \
-        "${obsnum}.ms" | tee wsclean.log
+        "${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms" | tee wsclean.log
 
 test_fail $?
+
+if [[ -e "${obsnum}_deep-MFS-image-pb.fits" ]]
+then
+    rm -rf ${obsnum}.ms && cp -rf ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms ./
+    rm -rf ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}
+else 
+    echo "There is no final image so I haven't subtracted anything because I'm not sure what's wrong" 
+    rm -rf ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms
+    exit 1
+    
+fi 
+
+
 track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
 track_task.py obs_status --obs_id="${obsnum}" --status='imaged'
 
