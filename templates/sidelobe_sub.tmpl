@@ -21,6 +21,7 @@ fi
 
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
+tempdir=${GXTEMP}/${jobid}_${taskid}/
 
 function test_fail {
 if [[ $1 != 0 ]]
@@ -55,8 +56,8 @@ track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
 
-mkdir -p ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}
-cp -rf ${obsnum}.ms ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/
+mkdir -p ${tempdir}/
+cp -rf ${obsnum}.ms ${tempdir}/
 
 
 # TODO: replace with find
@@ -125,7 +126,7 @@ else
     exit 0
 fi
 
-chgcentre "${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms" ${radec_lobe}
+chgcentre "${tempdir}/${obsnum}.ms" ${radec_lobe}
 
 # Initial shallow clean to populate the model column 
 # Set the pipefail so the test_fail does not test for tee
@@ -135,7 +136,7 @@ then
     taql alter table ${obsnum}.ms drop column MODEL_DATA
     wsclean \
             -abs-mem ${GXMEMORY} \
-            -temp-dir ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/ \
+            -temp-dir ${tempdir}/ \
             $multiscale \
             -nmiter 1 \
             -niter 10000 \
@@ -150,18 +151,18 @@ then
             -channels-out 4 \
             -join-polarizations \
             -data-column ${datacolumn} \
-            "${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms" | tee wsclean.log
+            "${tempdir}/${obsnum}.ms" | tee wsclean.log
 fi  
 
 if [[ -e "${obsnum}_sidelobe-MFS-XX-image.fits" ]]
 then
-    taql update ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms set ${datacolumn}=${datacolumn}-MODEL_DATA
+    taql update ${tempdir}/${obsnum}.ms set ${datacolumn}=${datacolumn}-MODEL_DATA
 # Also updating the model column to remove the model of the sidelobe so its not accidentally added later 
-    taql alter table ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms drop column MODEL_DATA
-    rm -rf ${obsnum}.ms && cp -rf ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms ./
+    taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
+    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
 else 
     echo "There is no sidelobe image so I haven't subtracted anything because I'm not sure what's wrong" 
-    rm -rf ${GXTEMP}/slurm_wsclean/${SLURM_JOB_ID}/${obsnum}.ms
+    rm -rf ${tempdir}/${obsnum}.ms
     exit 1
     
 fi 

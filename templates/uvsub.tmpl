@@ -29,6 +29,8 @@ fi
 
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
+tempdir=${GXTEMP}/${jobid}_${taskid}/
+
 
 function test_fail {
 if [[ $1 != 0 ]]
@@ -84,6 +86,7 @@ then
                                     --min-elevation 0.0 \
                                     --min-flux 5  \
                                     --check-fov \
+                                    --tempdir "${tempdir}/" \
                                     $debugoption \
                                     --model-output "${submodel}" 
 fi
@@ -92,9 +95,15 @@ if [[ -e "${submodel}" ]]
 then
     echo "Running wslean outlier clean and subtraction... "
     chmod +x "${submodel}"
+    mkdir -p ${tempdir}/
+    cp -rf ${obsnum}.ms ${tempdir}/
+
     ./"${submodel}"
     test_fail $?
 
+    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
+    rm -rf ${tempdir}/
+    
     echo "Removing outlier files"
     rm *outlier*fits
 else
