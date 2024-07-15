@@ -50,6 +50,7 @@ done
 
 for obsnum in $list
 do
+    cd ${basedir}/${obsnum}/
     flags=""
     # Tiles 72 and 76 intermittently dodgy in 2013/4
     if [[ ${obsnum} -ge 1060000000 ]] && [[ ${obsnum} -le 1070000000 ]]
