@@ -29,7 +29,7 @@ n=1
 for obsnum in $list
 do 
     cd $basedir 
-    obsfile=$(echo ./"${obsnum}_"[0-9]*"_${stem}.tar")
+    obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
     if [[ ! -d "${obsnum}" ]]
     then
         mkdir "${obsnum}"
