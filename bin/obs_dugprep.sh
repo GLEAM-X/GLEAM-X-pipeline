@@ -11,7 +11,7 @@ echo "obs_dugprep.sh [-t test] -p project -a acacia obslist
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
   -a acacia  : acacia bucket name to draw obsids from 
-  -o obsnum  : the obsid to process, or a text file of obsids (newline 
+  obsnum  : the obsid to process, or a text file of obsids (newline 
                separated)." 1>&2;
 exit 1;
 }
