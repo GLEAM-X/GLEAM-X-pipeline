@@ -9,10 +9,16 @@ echo ${GXUSER}
 cd $basedir
 
 # -----------------------------------------------------------------------------
+# LOAD MODULES
+# -----------------------------------------------------------------------------
+module load rclone 
+module load singularity 
+
+# -----------------------------------------------------------------------------
 # DOWNLOAD FROM ACACIA 
 # -----------------------------------------------------------------------------
 
-rclone copy --progress --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
+rclone copy --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
 
 # -----------------------------------------------------------------------------
 # UNTAR OBSIDS AND MAKE NICE DIRECTORY STRUCTURE
