@@ -90,30 +90,30 @@ chan=$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN "$metafits" | awk '{pr
 
 if [[ ! -e "${obsnum}_local_gleam_model.txt" ]]
 then
-    ln -s ${catfile} "${obsnum}_local_gleam_model.txt"
+    # ln -s ${catfile} "${obsnum}_local_gleam_model.txt"
 
-#     singularity run ${GXCONTAINER} crop_catalogue.py \
-#         --ra="${RA}" \
-#         --dec="${Dec}" \
-#         --radius=30 \
-#         --top-bright=300 \
-#         --metafits="${metafits}" \
-#         --catalogue="${catfile}" \
-#         --fluxcol=S_200 \
-#         --plot "${obsnum}_local_gleam_model.png" \
-#         --output "${obsnum}_cropped_catalogue.fits"
+    singularity run ${GXCONTAINER} crop_catalogue.py \
+        --ra="${RA}" \
+        --dec="${Dec}" \
+        --radius=30 \
+        --top-bright=300 \
+        --metafits="${metafits}" \
+        --catalogue="${catfile}" \
+        --fluxcol=S_200 \
+        --plot "${obsnum}_local_gleam_model.png" \
+        --output "${obsnum}_cropped_catalogue.fits"
     
-#     singularity run ${GXCONTAINER} vo2model.py \
-#         --catalogue="${obsnum}_cropped_catalogue.fits" \
-#         --point \
-#         --output="${obsnum}_local_gleam_model.txt" \
-#         --racol=RAJ2000 \
-#         --decol=DEJ2000 \
-#         --acol=a \
-#         --bcol=b \
-#         --pacol=pa \
-#         --fluxcol=S_200 \
-#         --alphacol=alpha
+    singularity run ${GXCONTAINER} vo2model.py \
+        --catalogue="${obsnum}_cropped_catalogue.fits" \
+        --point \
+        --output="${obsnum}_local_gleam_model.txt" \
+        --racol=RAJ2000 \
+        --decol=DEJ2000 \
+        --acol=a \
+        --bcol=b \
+        --pacol=pa \
+        --fluxcol=S_200 \
+        --alphacol=alpha
 fi
 calmodel="${obsnum}_local_gleam_model.txt"
 
@@ -149,86 +149,109 @@ if [[ ! -z $ion ]]
 then
     echo "Performing ionospheric triage. "
     # Ionospheric triage
-    solutions1="${obsnum}_${calmodel%%.txt}_solutions_ts10.bin"
-    # Remove duplicate obsnum
-    solutions1="${solutions1/${obsnum}_${obsnum}_/${obsnum}_}"
-
-    export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
-    singularity run $GXCONTAINER hyperdrive \
-        di-calibrate \
-        --max-iterations 500 \
-        --timesteps {0..9} \
-        --num-sources 1000 \
-        --uvw-min "${minuv}lambda" \
-        --uvw-max 1667lambda \
-        --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
-        --outputs "${solutions1}" \
-        -d "${obsnum}.ms" "${obsnum}.metafits" \
-        -s ${calmodel}
-    
-    singularity run $GXCONTAINER hyperdrive \
-        solutions-plot \
-        --ref-tile ${refant} \
-        --max-amp 2 \
-        -m ${obsnum}.metafits \
-        "${solutions1}" 
-
-    solutions="${obsnum}_${calmodel%%.txt}_solutions_ts20.bin"
+    solutions="${obsnum}_${calmodel%%.txt}_solutions_ts${ts}.bin"
     # Remove duplicate obsnum
     solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block
-    singularity run $GXCONTAINER hyperdrive \
-        di-calibrate \
-        --timesteps {10..19} \
-        --max-iterations 500 \
-        --num-sources 1000 \
-        --uvw-min "${minuv}lambda" \
-        --uvw-max 1667lambda \
-        --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
-        --outputs "${solutions}" \
-        -d "${obsnum}.ms" "${obsnum}.metafits" \
-        -s ${calmodel}
-
-    singularity run $GXCONTAINER hyperdrive \
-        solutions-plot \
-        --ref-tile ${refant} \
-        --max-amp 2 \
-        -m ${obsnum}.metafits \
-        "${solutions}" 
-    solutions="${obsnum}_${calmodel%%.txt}_solutions_ts30.bin"
-    # Remove duplicate obsnum
-    solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
-
-    export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
-    singularity run $GXCONTAINER hyperdrive \
-        di-calibrate \
-        --timesteps {20..29} \
-        --max-iterations 500 \
-        --num-sources 1000 \
-        --uvw-min "${minuv}lambda" \
-        --uvw-max 1667lambda \
-        --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
-        --outputs "${solutions}" \
-        -d "${obsnum}.ms" "${obsnum}.metafits" \
-        -s ${calmodel}
+    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER calibrate \
+            -t ${ts} \
+            -j ${SLURM_CPUS_PER_TASK} \
+            -absmem ${SLURM_MEM_PER_NODE} \
+            -m "${calmodel}" \
+            -minuv ${minuvm} \
+            -maxuv ${maxuvm} \
+            -applybeam -mwa-path "${MWAPATH}" \
+            "${obsnum}.ms" \
+            "${solutions}"
     
-    
-    singularity run $GXCONTAINER hyperdrive \
-        solutions-plot \
-        --ref-tile ${refant} \
-        --max-amp 2 \
-        -m ${obsnum}.metafits \
-        "${solutions}" 
-
     echo "Ionospheric calibration finished. Creating plots and statistics. "
+    aocal_plot.py --refant="${refant}" --amp_max=2 "${solutions}"
+    aocal_diff.py --metafits="${metafits}" --names "${solutions}" --refant="${refant}"
+    iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
+
+    # echo "Performing ionospheric triage. "
+    # # Ionospheric triage
+    # solutions1="${obsnum}_${calmodel%%.txt}_solutions_ts10.bin"
+    # # Remove duplicate obsnum
+    # solutions1="${solutions1/${obsnum}_${obsnum}_/${obsnum}_}"
+
+    # export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+    # srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
+    # singularity run $GXCONTAINER hyperdrive \
+    #     di-calibrate \
+    #     --max-iterations 500 \
+    #     --timesteps {0..9} \
+    #     --num-sources 1000 \
+    #     --uvw-min "${minuv}lambda" \
+    #     --uvw-max 1667lambda \
+    #     --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
+    #     --outputs "${solutions1}" \
+    #     -d "${obsnum}.ms" "${obsnum}.metafits" \
+    #     -s ${calmodel}
+    
+    # singularity run $GXCONTAINER hyperdrive \
+    #     solutions-plot \
+    #     --ref-tile ${refant} \
+    #     --max-amp 2 \
+    #     -m ${obsnum}.metafits \
+    #     "${solutions1}" 
+
+    # solutions="${obsnum}_${calmodel%%.txt}_solutions_ts20.bin"
+    # # Remove duplicate obsnum
+    # solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
+
+    # export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+    # srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block
+    # singularity run $GXCONTAINER hyperdrive \
+    #     di-calibrate \
+    #     --timesteps {10..19} \
+    #     --max-iterations 500 \
+    #     --num-sources 1000 \
+    #     --uvw-min "${minuv}lambda" \
+    #     --uvw-max 1667lambda \
+    #     --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
+    #     --outputs "${solutions}" \
+    #     -d "${obsnum}.ms" "${obsnum}.metafits" \
+    #     -s ${calmodel}
+
+    # singularity run $GXCONTAINER hyperdrive \
+    #     solutions-plot \
+    #     --ref-tile ${refant} \
+    #     --max-amp 2 \
+    #     -m ${obsnum}.metafits \
+    #     "${solutions}" 
+    # solutions="${obsnum}_${calmodel%%.txt}_solutions_ts30.bin"
+    # # Remove duplicate obsnum
+    # solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
+
+    # export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+    # srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
+    # singularity run $GXCONTAINER hyperdrive \
+    #     di-calibrate \
+    #     --timesteps {20..29} \
+    #     --max-iterations 500 \
+    #     --num-sources 1000 \
+    #     --uvw-min "${minuv}lambda" \
+    #     --uvw-max 1667lambda \
+    #     --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
+    #     --outputs "${solutions}" \
+    #     -d "${obsnum}.ms" "${obsnum}.metafits" \
+    #     -s ${calmodel}
+    
+    
+    # singularity run $GXCONTAINER hyperdrive \
+    #     solutions-plot \
+    #     --ref-tile ${refant} \
+    #     --max-amp 2 \
+    #     -m ${obsnum}.metafits \
+    #     "${solutions}" 
+
+    # echo "Ionospheric calibration finished. Creating plots and statistics. "
 
 
-    singularity run ${GXCONTAINER} python ${GXBASE}/gleam_x/bin/aocal_diff.py --metafits="${metafits}" --names --lastsol "${solutions}" "${solutions1}" --refant="${refant}"
-    singularity run ${GXCONTAINER} iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
+    # singularity run ${GXCONTAINER} python ${GXBASE}/gleam_x/bin/aocal_diff.py --metafits="${metafits}" --names --lastsol "${solutions}" "${solutions1}" --refant="${refant}"
+    # singularity run ${GXCONTAINER} iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
 fi
 
 # At the moment, assume that the ionosphere is OK, and derive some real solutions
@@ -238,17 +261,26 @@ solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
 # # calibrate
 export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
-singularity run $GXCONTAINER hyperdrive \
-    di-calibrate \
-    --uvw-min "${minuv}lambda" \
-    --max-iterations 500 \
-    --num-sources 1000 \
-    --uvw-max 1667lambda \
-    --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
-    --outputs "${solutions}" \
-    -d "${obsnum}.ms" "${obsnum}.metafits" \
-    -s ${calmodel}
+srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER calibrate \
+        -j ${SLURM_CPUS_PER_TASK} \
+        -absmem ${SLURM_MEM_PER_NODE} \
+        -m "${calmodel}" \
+        -minuv $minuvm \
+        -maxuv $maxuvm \
+        -applybeam -mwa-path "${MWAPATH}" \
+        "${obsnum}".ms \
+        "${solutions}"
+
+# singularity run $GXCONTAINER hyperdrive \
+#     di-calibrate \
+#     --uvw-min "${minuv}lambda" \
+#     --max-iterations 500 \
+#     --num-sources 1000 \
+#     --uvw-max 1667lambda \
+#     --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
+#     --outputs "${solutions}" \
+#     -d "${obsnum}.ms" "${obsnum}.metafits" \
+#     -s ${calmodel}
 test_fail $?
 
 # Create a version divided through by the reference antenna, so that all observations have the same relative XY phase, allowing polarisation calibration solutions to be transferred
