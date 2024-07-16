@@ -24,7 +24,10 @@ rclone copy --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
 # UNTAR OBSIDS AND MAKE NICE DIRECTORY STRUCTURE
 # -----------------------------------------------------------------------------
 
-list=$(awk '{print substr($1,8,10)}' < "${obslist}_manta.tmp")
+
+# list=$(awk '{print substr($1,8,10)}' < "${obslist}_manta.tmp")
+list=()
+while IFS= read -r line; do arr+=("$line"); done < ${obslist} 
 n=1
 for obsnum in $list
 do 
