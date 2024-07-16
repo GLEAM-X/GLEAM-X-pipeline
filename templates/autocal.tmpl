@@ -153,8 +153,8 @@ then
     # Remove duplicate obsnum
     solutions1="${solutions1/${obsnum}_${obsnum}_/${obsnum}_}"
 
-    # export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    # srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
+    export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
     singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --max-iterations 500 \
@@ -178,8 +178,8 @@ then
     # Remove duplicate obsnum
     solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
-    # export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    # srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block
+    export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block
     singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --timesteps {10..19} \
@@ -202,8 +202,8 @@ then
     # Remove duplicate obsnum
     solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
-    # export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    # srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
+    export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
     singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --timesteps {20..29} \
@@ -237,8 +237,8 @@ solutions="${obsnum}_${calmodel%%.txt}_solutions_initial.bin"
 solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
 # # calibrate
-# export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-# srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
+export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
 singularity run $GXCONTAINER hyperdrive \
     di-calibrate \
     --uvw-min "${minuv}lambda" \
