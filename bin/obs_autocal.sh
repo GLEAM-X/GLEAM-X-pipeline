@@ -135,8 +135,8 @@ chmod 755 "${script}"
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "srun --cpus-per-task=${CPUSPERTASK} --ntasks=1 --ntasks-per-node=1  singularity run ${GXCONTAINER} ${script}" >> ${script}
 
-sub="sbatch --begin=now+5minutes --export=ALL --cpus-per-task=${CPUSPERTASK}  --mem=${MEMPERTASK}G  --partition=${GXSTANDARDQ} ${GXTASKLINE} --output=${output} --error=${error}"
-sub="${sub} ${account} ${jobarray} ${depend} ${queue} ${script}"
+sub="sbatch --begin=now+5minutes --export=ALL --cpus-per-task=${CPUSPERTASK}  --mem=${MEMPERTASK}G --partition=${GXSTANDARDQ} ${GXTASKLINE} --output=${output} --error=${error}"
+sub="${sub} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
