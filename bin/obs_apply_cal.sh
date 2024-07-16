@@ -95,7 +95,7 @@ else
 fi
 
 # Set directories
-queue="-p ${GXSTANDARDQ}"
+queue="--partition=${GXSTANDARDQ}"
 base="${GXSCRATCH}/${project}"
 
 if [[ $? != 0 ]]
@@ -136,8 +136,8 @@ then
     GXNCPULINE="--ntasks-per-node=1"
 fi
 
-sub="sbatch --begin=now+5minutes  --export=ALL --time=01:00:00 --mem=5G -M ${GXCOMPUTER} --output=${output} --error=${error} "
-sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${script}.sbatch"
+sub="sbatch --begin=now+5minutes  --export=ALL --time=01:00:00 --mem=5G  --output=${output} --error=${error} "
+sub="${sub} ${queue} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${script}.sbatch"
 
 if [[ ! -z ${tst} ]]
 then
