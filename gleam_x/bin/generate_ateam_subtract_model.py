@@ -333,17 +333,17 @@ def wsclean_script(
         ):
             datacolumn = "DATA" if corrected_data is False else "CORRECTED_DATA"
 
-            taql = f"taql alter table {tempdir}/{obsid}.ms drop column MODEL_DATA\n\n"
+            taql = f"taql alter table {obsid}.ms drop column MODEL_DATA\n\n"
             out.write(taql)
 
             chg = (
                 f"chgcentre "
-                f"{tempdir}/{obsid}.ms "
+                f"{obsid}.ms "
                 f"{phasecenter.replace('J2000 ', '')} \n"
                 f"chgcentre "
                 f"-zenith "
                 f"-shiftback "
-                f"{tempdir}/{obsid}.ms \n\n"
+                f"{obsid}.ms \n\n"
             )
             out.write(chg)
 
@@ -355,12 +355,12 @@ def wsclean_script(
                 f"-weight briggs 0.5  -auto-mask 3 -auto-threshold 1 "
                 f"-temp-dir {tempdir}/ "
                 f" {spec_fit} "
-                f"{tempdir}/{obsid}.ms \n\n"
+                f"{obsid}.ms \n\n"
             )
             out.write(wsclean)
 
             taql = (
-                f"taql update {tempdir}/{obsid}.ms set {datacolumn}={datacolumn}-MODEL_DATA\n\n"
+                f"taql update {obsid}.ms set {datacolumn}={datacolumn}-MODEL_DATA\n\n"
             )
             out.write(taql)
 
@@ -369,12 +369,12 @@ def wsclean_script(
 
         chg = (
             f"chgcentre "
-            f"{tempdir}/{obsid}.ms "
+            f"{obsid}.ms "
             f"$coords \n"
             f"chgcentre "
             f"-zenith "
             f"-shiftback "
-            f"{tempdir}/{obsid}.ms \n\n"
+            f"{obsid}.ms \n\n"
         )
         out.write(chg)
 
