@@ -133,7 +133,7 @@ echo "srun --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GX
 if [ ! -z ${GXNCPULINE} ]
 then
     # autoflag only needs a single CPU core
-    GXNCPULINE="--ntasks-per-node=1"
+    GXNCPULINE="--ntasks-per-node=1 --cpus-per-taks=1"
 fi
 
 sub="sbatch --begin=now+5minutes  --export=ALL --time=01:00:00 --mem=5G  --output=${output} --error=${error} "
