@@ -86,7 +86,7 @@ then
                                     --min-elevation 0.0 \
                                     --min-flux 5  \
                                     --check-fov \
-                                    --tempdir "${tempdir}/" \
+                                    --tempdir "${tempdir}" \
                                     $debugoption \
                                     --model-output "${submodel}" 
 fi
@@ -110,4 +110,4 @@ else
     echo "No wsclean script ${submodel} found. Exiting. "
 fi
 
-track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
