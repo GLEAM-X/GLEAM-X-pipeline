@@ -35,7 +35,7 @@ tempdir=${GXTEMP}/${jobid}_${taskid}/
 function test_fail {
 if [[ $1 != 0 ]]
 then
-    track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+    singularity run ${GXCONTAINER} track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
     exit "$1"
 fi
 }
@@ -43,7 +43,7 @@ fi
 datadir=DATADIR
 
 # start
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 cd "${datadir}/${obsnum}" || exit
 
@@ -57,14 +57,14 @@ fi
 
 # Check whether the phase centre has already changed
 # Calibration will fail if it has, so measurement set must be shifted back to its original position
-current=$(chgcentre "${obsnum}.ms") 
+current=$(srun singularity run ${GXCONTAINER} chgcentre "${obsnum}.ms") 
 
 if [[ $current == *"shift"* ]] 
 then
     echo "Detected that this measurement set has undergone a denormal shift; this must be undone before subtrmodel."
-    coords=$(calc_pointing.py "${metafits}")
+    coords=$(singularity run ${GXCONTAINER} calc_pointing.py "${metafits}")
     echo "Optimally shifting co-ordinates of measurement set to $coords, without zenith shiftback."
-    chgcentre \
+    srun singularity run ${GXCONTAINER} chgcentre \
             "${obsnum}.ms" \
             ${coords}
 else 
@@ -81,7 +81,7 @@ then
         debugoption='--corrected-data'
     fi
     echo "Generating model of A-Team sources for uv-subtraction"
-    generate_ateam_subtract_model.py "${obsnum}.metafits" \
+    singularity run ${GXCONTAINER} ${GXBASE}/gleam_x/bin/generate_ateam_subtract_model.py "${obsnum}.metafits" \
                                     --mode wsclean \
                                     --min-elevation 0.0 \
                                     --min-flux 5  \
@@ -98,7 +98,7 @@ then
     mkdir -p ${tempdir}/
     cp -rf ${obsnum}.ms ${tempdir}/
 
-    ./"${submodel}"
+    srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run ${GXCONTAINER} ./"${submodel}"
     test_fail $?
 
     rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
