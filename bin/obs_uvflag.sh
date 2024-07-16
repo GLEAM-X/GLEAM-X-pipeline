@@ -70,7 +70,7 @@ else
     jobarray=''
 fi
 
-queue="-p ${GXSTANDARDQ}"
+queue="--partition=${GXSTANDARDQ}"
 datadir="${GXSCRATCH}/${project}"
 
 # set dependency
@@ -125,8 +125,8 @@ then
     GXNCPULINE="--ntasks-per-node=1"
 fi
 
-sub="sbatch --begin=now+5minutes --export=ALL  --time=01:00:00 -M ${GXCOMPUTER} --mem=${MEMPERTASK}G --cpus-per-task=${CPUSPERTASK} --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
+sub="sbatch --begin=now+5minutes --export=ALL --time=01:00:00 --mem=5G --cpus-per-task=1 --output=${output} --error=${error}"
+sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
 
 if [[ ! -z ${tst} ]]
 then
