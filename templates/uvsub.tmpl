@@ -96,13 +96,13 @@ then
     echo "Running wslean outlier clean and subtraction... "
     chmod +x "${submodel}"
     mkdir -p ${tempdir}/
-    cp -rf ${obsnum}.ms ${tempdir}/
+    # cp -rf ${obsnum}.ms ${tempdir}/
 
     srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run ${GXCONTAINER} ./"${submodel}"
     test_fail $?
 
-    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
-    rm -rf ${tempdir}/
+    # rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
+    # rm -rf ${tempdir}/
     
     echo "Removing outlier files"
     rm *outlier*fits
