@@ -206,8 +206,8 @@ done
 set -o pipefail
 # Deep clean (for pipeline)
 export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run $GXCONTAINER wsclean \
-        -abs-mem 40 \
+srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} singularity run $GXCONTAINER wsclean \
+        -abs-mem 140 \
         -temp-dir ${tempdir}/ \
         $multiscale \
         $scalebias \
