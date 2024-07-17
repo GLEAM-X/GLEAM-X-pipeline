@@ -326,57 +326,62 @@ def wsclean_script(
         return
 
     with open(outpath, "w") as out:
-        out.write("#!/bin/bash \n")
-        out.write("set -x \n\n")
+        # out.write("#!/bin/bash \n")
+        # out.write("set -x \n\n")
         for c, (imagename, phasecenter, imsize) in enumerate(
             zip(outliers["imagename"], outliers["phasecenter"], outliers["imsize"])
         ):
-            datacolumn = "DATA" if corrected_data is False else "CORRECTED_DATA"
+            
+            chg = (f"{phasecenter.replace('J2000 ', '')} : {imagename} \n")
 
-            taql = f"taql alter table {obsid}.ms drop column MODEL_DATA\n\n"
-            out.write(taql)
 
-            chg = (
-                f"chgcentre "
-                f"{obsid}.ms "
-                f"{phasecenter.replace('J2000 ', '')} \n"
-                f"chgcentre "
-                f"-zenith "
-                f"-shiftback "
-                f"{obsid}.ms \n\n"
-            )
             out.write(chg)
+            # datacolumn = "DATA" if corrected_data is False else "CORRECTED_DATA"
 
-            spec_fit = "-join-channels -channels-out 64 -fit-spectral-pol 4"
-            wsclean = (
-                f"wsclean "
-                f"-mgain 0.8 -abs-mem {mem} -nmiter 10 -niter 100000 -size 128 128 -pol XXYY "
-                f"-data-column {datacolumn} -name {imagename} -scale 10arcsec "
-                f"-weight briggs 0.5  -auto-mask 3 -auto-threshold 1 "
-                f"-temp-dir {tempdir}/ "
-                f" {spec_fit} "
-                f"{obsid}.ms \n\n"
-            )
-            out.write(wsclean)
+            # taql = f"taql alter table {obsid}.ms drop column MODEL_DATA\n\n"
+            # out.write(taql)
 
-            taql = (
-                f"taql update {obsid}.ms set {datacolumn}={datacolumn}-MODEL_DATA\n\n"
-            )
-            out.write(taql)
+            # chg = (
+            #     f"chgcentre "
+            #     f"{obsid}.ms "
+            #     f"{phasecenter.replace('J2000 ', '')} \n"
+            #     f"chgcentre "
+            #     f"-zenith "
+            #     f"-shiftback "
+            #     f"{obsid}.ms \n\n"
+            # )
+            # out.write(chg)
 
-        coords = f"coords=$(calc_optimum_pointing.py --metafits '{metafits}') \n\n"
-        out.write(coords)
+        #     spec_fit = "-join-channels -channels-out 64 -fit-spectral-pol 4"
+        #     wsclean = (
+        #         f"wsclean "
+        #         f"-mgain 0.8 -abs-mem {mem} -nmiter 10 -niter 100000 -size 128 128 -pol XXYY "
+        #         f"-data-column {datacolumn} -name {imagename} -scale 10arcsec "
+        #         f"-weight briggs 0.5  -auto-mask 3 -auto-threshold 1 "
+        #         f"-temp-dir {tempdir}/ "
+        #         f" {spec_fit} "
+        #         f"{obsid}.ms \n\n"
+        #     )
+        #     out.write(wsclean)
 
-        chg = (
-            f"chgcentre "
-            f"{obsid}.ms "
-            f"$coords \n"
-            f"chgcentre "
-            f"-zenith "
-            f"-shiftback "
-            f"{obsid}.ms \n\n"
-        )
-        out.write(chg)
+        #     taql = (
+        #         f"taql update {obsid}.ms set {datacolumn}={datacolumn}-MODEL_DATA\n\n"
+        #     )
+        #     out.write(taql)
+
+        # coords = f"coords=$(calc_optimum_pointing.py --metafits '{metafits}') \n\n"
+        # out.write(coords)
+
+        # chg = (
+        #     f"chgcentre "
+        #     f"{obsid}.ms "
+        #     f"$coords \n"
+        #     f"chgcentre "
+        #     f"-zenith "
+        #     f"-shiftback "
+        #     f"{obsid}.ms \n\n"
+        # )
+        # out.write(chg)
 
 
 @u.quantity_input(search_radius=u.arcminute, min_elevation=u.degree)
