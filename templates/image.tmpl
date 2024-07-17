@@ -21,7 +21,17 @@ fi
 
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
-tempdir=${GXTEMP}/${jobid}_${taskid}/
+
+if [[ -n $TMPDIR_SHM && -d $TMPDIR_SHM ]];then
+    ramDiskBase=$TMPDIR_SHM
+else
+    ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
+fi
+tempdir="${ramDiskBase}/tmp"
+mkdir -p "$tempdir"
+[[ -d $tempdir ]] || die "RAM disk creation unsuccessful: $tempdir"
+trap "rm -rf $ramDisk" EXIT
+# tempdir=${GXTEMP}/${jobid}_${taskid}/
 
 function test_fail {
 if [[ $1 != 0 ]]
@@ -53,12 +63,12 @@ tsigma=1
 
 # Update database
 cd "${base}" || exit
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
 
-mkdir -p ${tempdir}/
+
 cp -rf ${obsnum}.ms ${tempdir}/
 
 
@@ -84,10 +94,10 @@ elif [[ $obsnum -ge 1191580576 ]] ; then
 fi
 
 # Set up channel-dependent options
-chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
-bandwidth="$(pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
-centfreq="$(pyhead.py -p FREQCENT ${metafits} | awk '{print $3}')"
-chans="$(pyhead.py -p CHANNELS ${metafits} | awk '{print $3}' | sed 's/,/ /g')"
+chan="$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+bandwidth="$(singularity run $GXCONTAINER pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
+centfreq="$(singularity run $GXCONTAINER pyhead.py -p FREQCENT ${metafits} | awk '{print $3}')"
+chans="$(singularity run $GXCONTAINER pyhead.py -p CHANNELS ${metafits} | awk '{print $3}' | sed 's/,/ /g')"
 chans=($chans)
 
 # Pixel scale
@@ -107,7 +117,7 @@ multiscale="-multiscale -mgain 0.85 -multiscale-gain 0.15"
 
 if [[ ! -e ${obsnum}_mainlobes.txt ]]
 then 
-    get_mwa_pb_lobes.py ${metafits} -mM > ${obsnum}_mainlobes.txt
+    singularity run $GXCONTAINER get_mwa_pb_lobes.py ${metafits} -mM > ${obsnum}_mainlobes.txt
     ra_mainlobe=$(cat ${obsnum}_mainlobes.txt | awk '{print $2}')
     dec_mainlobe=$(cat ${obsnum}_mainlobes.txt | awk '{print $3}')
 else
@@ -115,8 +125,8 @@ else
     dec_mainlobe=$(cat ${obsnum}_mainlobes.txt | awk '{print $3}')
 fi
 
-gal_check=$(check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe} -g)
-vira_check=$(check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe} -s "VirA")
+gal_check=$(singularity run $GXCONTAINER check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe} -g)
+vira_check=$(singularity run $GXCONTAINER check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe} -s "VirA")
 
 if [[ "$gal_check" == "True" ]] || [[ "$vira_check" == "True" ]]
 then 
@@ -127,7 +137,7 @@ else
 fi 
 
 # Check whether the phase centre has already changed
-current=$(chgcentre "${tempdir}/${obsnum}.ms")
+current=$(singularity run $GXCONTAINER chgcentre "${tempdir}/${obsnum}.ms")
 
 if [[ $current == *"shift"* ]]
 then
@@ -135,15 +145,15 @@ then
 else
     # Determine whether to shift the pointing centre to be more optimally-centred 
     # on the peak of the primary beam sensitivity
-    coords=$(calc_pointing.py "${metafits}")
+    coords=$(singularity run $GXCONTAINER calc_pointing.py "${metafits}")
     echo "Optimally shifting co-ordinates of measurement set to $coords, with zenith shiftback."
-    chgcentre \
+    singularity run $GXCONTAINER chgcentre \
             "${tempdir}/${obsnum}.ms" \
             ${coords}
 
     # Now shift the pointing centre to point straight up, 
     # which approximates minw without making the phase centre rattle around
-    chgcentre \
+    singularity run $GXCONTAINER chgcentre \
             -zenith \
             -shiftback \
             "${tempdir}/${obsnum}.ms"
@@ -152,8 +162,8 @@ fi
 # Create a template image that has all the same properties as our eventual WSClean image
 if [[ ! -e "${obsnum}_template.fits" ]]
 then
-    wsclean \
-            -abs-mem ${GXMEMORY} \
+    singularity run $GXCONTAINER wsclean \
+            -abs-mem 40G \
             -temp-dir ${tempdir}/ \
             -mgain 1.0 \
             -nmiter 1 \
@@ -165,7 +175,7 @@ then
             -data-column ${datacolumn} \
             -channel-range 4 5 \
             -interval 4 5 \
-            -nwlayers ${GXNCPUS} \
+            -nwlayers ${SLURM_CPUS_PER_TASK} \
             "${tempdir}/${obsnum}.ms" 
 
     rm "${obsnum}_template-dirty.fits"
@@ -186,7 +196,7 @@ do
     do 
         if [[ ! -e "${obsnum}_000${n}-${pol}-beam.fits" ]]
         then
-            lookup_jones.py ${obsnum} _template.fits ${obsnum}_000${n}- -c $cstart-$cend --wsclean_names
+            singularity run $GXCONTAINER lookup_jones.py ${obsnum} _template.fits ${obsnum}_000${n}- -c $cstart-$cend --wsclean_names
         fi
         ln -s "${obsnum}_000${n}-${pol}-beam.fits" "${obsnum}_deep-000${n}-beam-${pol}.fits"
     done
@@ -195,8 +205,9 @@ done
 # Set the pipefail so the test_fail does not test for tee
 set -o pipefail
 # Deep clean (for pipeline)
-wsclean \
-        -abs-mem ${GXMEMORY} \
+export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run $GXCONTAINER wsclean \
+        -abs-mem 40G \
         -temp-dir ${tempdir}/ \
         $multiscale \
         $scalebias \
@@ -232,8 +243,8 @@ else
 fi 
 
 
-track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
-track_task.py obs_status --obs_id="${obsnum}" --status='imaged'
+singularity run $GXCONTAINER track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py obs_status --obs_id="${obsnum}" --status='imaged'
 
 ### TODO fix wsclean2gleam.py so it more cleverly handles lack of polarisation
 # Rename files
