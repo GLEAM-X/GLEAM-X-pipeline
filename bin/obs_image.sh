@@ -71,7 +71,7 @@ fi
 
 if [[ ! -z ${GXACCOUNT} ]]
 then
-    account="--account=${GXACCOUNT}"
+    account="--partition=${GXACCOUNT}"
 fi
 
 # Establish job array options
@@ -108,7 +108,7 @@ chmod 755 "${script}"
 # echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
 sub="sbatch --begin=now+5minutes --export=ALL  --time=12:00:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} --cpus-per-task=${GXNCPUS} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}"
+sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
