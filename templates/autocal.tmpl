@@ -137,7 +137,7 @@ then
     echo "Detected that this measurement set has undergone a denormal shift; this must be undone before calibration."
     coords=$(singularity run $GXCONTAINER calc_optimum_pointing.py --metafits "${metafits}")
     echo "Optimally shifting co-ordinates of measurement set to $coords, without zenith shiftback."
-    srun singularity run ${GXCONTAINER} chgcentre \
+    singularity run ${GXCONTAINER} chgcentre \
             "${obsnum}.ms" \
             ${coords}
 else
@@ -164,8 +164,7 @@ then
     
     if [[ ! -z ${ao_calibrate} ]]
     then 
-        export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-        srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER calibrate \
+        singularity run $GXCONTAINER calibrate \
                 -t ${ts} \
                 -j ${SLURM_CPUS_PER_TASK} \
                 -absmem ${SLURM_MEM_PER_NODE} \
@@ -177,9 +176,9 @@ then
                 "${solutions}"
         
         echo "Ionospheric calibration finished. Creating plots and statistics. "
-        aocal_plot.py --refant="${refant}" --amp_max=2 "${solutions}"
-        aocal_diff.py --metafits="${metafits}" --names "${solutions}" --refant="${refant}"
-        iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
+        singularity run $GXCONTAINER aocal_plot.py --refant="${refant}" --amp_max=2 "${solutions}"
+        singularity run $GXCONTAINER aocal_diff.py --metafits="${metafits}" --names "${solutions}" --refant="${refant}"
+        singularity run $GXCONTAINER iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
     else
         echo "Performing ionospheric triage using hyperdrive. "
         # Ionospheric triage
@@ -187,8 +186,6 @@ then
         # Remove duplicate obsnum
         solutions1="${solutions1/${obsnum}_${obsnum}_/${obsnum}_}"
 
-        export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-        srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
         singularity run $GXCONTAINER hyperdrive \
             di-calibrate \
             --max-iterations 500 \
@@ -208,36 +205,34 @@ then
             -m ${obsnum}.metafits \
             "${solutions1}" 
 
-        solutions="${obsnum}_${calmodel%%.txt}_solutions_ts20.bin"
-        # Remove duplicate obsnum
-        solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
+        # solutions="${obsnum}_${calmodel%%.txt}_solutions_ts20.bin"
+        # # Remove duplicate obsnum
+        # solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
-        export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-        srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block
-        singularity run $GXCONTAINER hyperdrive \
-            di-calibrate \
-            --timesteps {10..19} \
-            --max-iterations 500 \
-            --num-sources 1000 \
-            --uvw-min "${minuv}lambda" \
-            --uvw-max 1667lambda \
-            --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
-            --outputs "${solutions}" \
-            -d "${obsnum}.ms" "${obsnum}.metafits" \
-            -s ${calmodel}
+        # export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+        # srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block
+        # singularity run $GXCONTAINER hyperdrive \
+        #     di-calibrate \
+        #     --timesteps {10..19} \
+        #     --max-iterations 500 \
+        #     --num-sources 1000 \
+        #     --uvw-min "${minuv}lambda" \
+        #     --uvw-max 1667lambda \
+        #     --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
+        #     --outputs "${solutions}" \
+        #     -d "${obsnum}.ms" "${obsnum}.metafits" \
+        #     -s ${calmodel}
 
-        singularity run $GXCONTAINER hyperdrive \
-            solutions-plot \
-            --ref-tile ${refant} \
-            --max-amp 2 \
-            -m ${obsnum}.metafits \
-            "${solutions}" 
+        # singularity run $GXCONTAINER hyperdrive \
+        #     solutions-plot \
+        #     --ref-tile ${refant} \
+        #     --max-amp 2 \
+        #     -m ${obsnum}.metafits \
+        #     "${solutions}" 
         solutions="${obsnum}_${calmodel%%.txt}_solutions_ts30.bin"
         # Remove duplicate obsnum
         solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
-        export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-        srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block 
         singularity run $GXCONTAINER hyperdrive \
             di-calibrate \
             --timesteps {20..29} \
@@ -273,8 +268,7 @@ solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 if [[ ! -z ${ao_calibrate} ]]
 then 
     # # calibrate
-    export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER calibrate \
+    singularity run $GXCONTAINER calibrate \
             -j ${SLURM_CPUS_PER_TASK} \
             -absmem ${SLURM_MEM_PER_NODE} \
             -m "${calmodel}" \
@@ -284,8 +278,7 @@ then
             "${obsnum}".ms \
             "${solutions}"
 else
-    export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block  singularity run $GXCONTAINER hyperdrive \
+    singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --uvw-min "${minuv}lambda" \
         --max-iterations 500 \
