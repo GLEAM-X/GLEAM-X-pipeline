@@ -194,7 +194,7 @@ then
         echo "Ionospheric calibration finished. Creating plots and statistics. "
         singularity run $GXCONTAINER aocal_plot.py --refant="${refant}" --amp_max=2 "${solutions}"
         singularity run $GXCONTAINER aocal_diff.py --metafits="${metafits}" --names "${solutions}" --refant="${refant}"
-        singularity run $GXCONTAINER iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
+        # singularity run $GXCONTAINER iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
     else
         echo "Performing ionospheric triage using hyperdrive. "
         # Ionospheric triage
@@ -273,7 +273,7 @@ then
 
 
         singularity run ${GXCONTAINER} python ${GXBASE}/gleam_x/bin/aocal_diff.py --metafits="${metafits}" --names --lastsol "${solutions}" "${solutions1}" --refant="${refant}"
-        singularity run ${GXCONTAINER} iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
+        # singularity run ${GXCONTAINER} iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
     fi
 fi
 
