@@ -140,7 +140,7 @@ calmodel="${obsnum}_local_gleam_model.txt"
 
 
 cd "${datadir}/${obsnum}" || exit
-cp -rf ${obsnum}.ms ${tempdir}/
+cp -rf ${obsnum}.ms ${tempdir}/ || exit 
 # Check whether the phase centre has already changed
 # Calibration will fail if it has, so measurement set must be shifted back to its original position
 current=$(singularity run $GXCONTAINER chgcentre "${tempdir}/${obsnum}.ms") 
