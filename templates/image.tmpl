@@ -165,6 +165,7 @@ then
     singularity run $GXCONTAINER wsclean \
             -abs-mem 160 \
             -temp-dir ${tempdir}/ \
+            -j ${SLURM_CPUS_PER_TASK} \
             -mgain 1.0 \
             -nmiter 1 \
             -niter 0 \
@@ -206,7 +207,8 @@ done
 set -o pipefail
 # Deep clean (for pipeline)
 singularity run $GXCONTAINER wsclean \
-        -abs-mem 160 \
+        -abs-mem ${SLUR} \
+        -j ${SLURM_CPUS_PER_TASK} \
         -temp-dir ${tempdir}/ \
         $multiscale \
         $scalebias \
