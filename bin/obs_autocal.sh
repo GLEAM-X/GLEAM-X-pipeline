@@ -8,6 +8,7 @@ echo "obs_autocal.sh [-d dep] [-a account] [-t] obsnum
   -i         : disable the ionospheric metric tests (default = False)
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
+  -a         : Flag to use aocalibrate instead of hyperdrive? 
   -f FRAC    : the acceptable fraction of spectrum that may be flagged in a calibration
                solution file before it is marked as bad. Value between 0 - 1. (default = 0.25)
   -s SFRAC   : the acceptable fraction of a segmented spectrum that may be flagged in a 
@@ -26,9 +27,9 @@ tst=
 ion=1
 frac=0.25
 sthresh=0.4
-
+ao_calibrate=
 # parse args and set options
-while getopts ':tia:d:p:f:s:' OPTION
+while getopts ':tiad:p:f:s:' OPTION
 do
     case "$OPTION" in
 	d)
@@ -46,6 +47,9 @@ do
 	t)
 	    tst=1
 	    ;;
+    a)
+        ao_calibrate=1
+        ;;
     f)
         frac=${OPTARG}
         ;;
@@ -102,6 +106,7 @@ cat "${GXBASE}/templates/autocal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                      -e "s:DATADIR:${datadir}:g" \
                                      -e "s:IONOTEST:${ion}:g" \
                                      -e "s:PIPEUSER:${pipeuser}:g" \
+                                     -e "s:OFFRINGA:${ao_calibrate}:g" \
                                      -e "s:FRACTION:${frac}:g" \
                                      -e "s:STHRESH:${sthresh}:g" > "${script}"
 
