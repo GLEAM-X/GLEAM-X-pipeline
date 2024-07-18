@@ -163,7 +163,7 @@ fi
 if [[ ! -e "${obsnum}_template.fits" ]]
 then
     singularity run $GXCONTAINER wsclean \
-            -abs-mem 40 \
+            -abs-mem 160 \
             -temp-dir ${tempdir}/ \
             -mgain 1.0 \
             -nmiter 1 \
@@ -205,9 +205,8 @@ done
 # Set the pipefail so the test_fail does not test for tee
 set -o pipefail
 # Deep clean (for pipeline)
-export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} singularity run $GXCONTAINER wsclean \
-        -abs-mem 140 \
+singularity run $GXCONTAINER wsclean \
+        -abs-mem 160 \
         -temp-dir ${tempdir}/ \
         $multiscale \
         $scalebias \
