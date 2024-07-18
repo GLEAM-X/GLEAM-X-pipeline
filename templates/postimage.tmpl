@@ -137,8 +137,7 @@ do
         singularity run ${GXCONTAINER} BANE --cores 1 --compress --noclobber "${obsnum}_deep-${subchan}-image-pb.fits"
         # TODO: Replace the redirection
 
-        export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-        srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run ${GXCONTAINER} aegean  --autoload --cores=${SLURM_CPUS_PER_TASK} --table="./${obsnum}_deep-${subchan}-image-pb.fits" "./${obsnum}_deep-${subchan}-image-pb.fits" > >(tee -a "${obsnum}_deep-${subchan}_aegean.log") 2> >(tee -a "${obsnum}_deep-${subchan}_aegean.log" >&2)
+        singularity run ${GXCONTAINER} aegean  --autoload --cores=${SLURM_CPUS_PER_TASK} --table="./${obsnum}_deep-${subchan}-image-pb.fits" "./${obsnum}_deep-${subchan}-image-pb.fits" > >(tee -a "${obsnum}_deep-${subchan}_aegean.log") 2> >(tee -a "${obsnum}_deep-${subchan}_aegean.log" >&2)
     fi
     nsrc=$(grep "INFO found" "${obsnum}_deep-${subchan}_aegean.log" | head -1 | awk '{print $3}')
     if [[ $nsrc -lt $minsrcs ]]
@@ -259,8 +258,7 @@ do
         # rerun the source-finding -- don't save to the log this time as the numbers should not have changed
         if [[ ! -e "${obsnum}_deep-${subchan}-image-pb_warp_comp.fits" ]]
         then
-            export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-            srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run ${GXCONTAINER} aegean --autoload --cores=${SLURM_CPUS_PER_TASK} --table="./${obsnum}_deep-${subchan}-image-pb_warp.fits" "./${obsnum}_deep-${subchan}-image-pb_warp.fits"
+            singularity run ${GXCONTAINER} aegean --autoload --cores=${SLURM_CPUS_PER_TASK} --table="./${obsnum}_deep-${subchan}-image-pb_warp.fits" "./${obsnum}_deep-${subchan}-image-pb_warp.fits"
         fi
         if [[ ! -e "${obsnum}_deep-${subchan}-image-pb_warp_weight.fits" ]]
         then
