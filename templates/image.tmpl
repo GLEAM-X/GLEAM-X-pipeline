@@ -27,7 +27,7 @@ if [[ -n $TMPDIR_SHM && -d $TMPDIR_SHM ]];then
 else
     ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
 fi
-tempdir="${ramDiskBase}/${jobid}_${taskid}"
+tempdir="${ramDiskBase}${jobid}_${taskid}"
 mkdir -p "$tempdir"
 [[ -d $tempdir ]] || die "RAM disk creation unsuccessful: $tempdir"
 trap "rm -rf $ramDisk" EXIT
