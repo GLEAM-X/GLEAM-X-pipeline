@@ -207,11 +207,11 @@ done
 # Set the pipefail so the test_fail does not test for tee
 set -o pipefail
 # Deep clean (for pipeline)
-singularity run $GXCONTAINER wsclean \
+singularity run -B ${base}/${obsnum}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINER wsclean \
         -abs-mem 60 \
         -j ${SLURM_CPUS_PER_TASK} \
         -parallel-gridding ${SLURM_CPUS_PER_TASK} \
-        -temp-dir ${tempdir}/ \
+        -temp-dir /tmp \
         $multiscale \
         $scalebias \
         -nmiter 5 \
@@ -230,7 +230,7 @@ singularity run $GXCONTAINER wsclean \
         -save-source-list \
         -fit-spectral-pol 2 \
         -data-column ${datacolumn} \
-        "${obsnum}.ms" | tee wsclean.log
+        /input | tee wsclean.log
 
 test_fail $?
 cp ${tempdir}/${obsnum}_deep* ./
