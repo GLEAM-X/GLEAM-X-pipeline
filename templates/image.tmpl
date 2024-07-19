@@ -69,7 +69,7 @@ datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
 
 
-cp -rf ${obsnum}.ms ${tempdir}/
+# cp -rf ${obsnum}.ms ${tempdir}/
 
 
 # TODO: replace with find
@@ -163,7 +163,7 @@ fi
 if [[ ! -e "${obsnum}_template.fits" ]]
 then
     singularity run $GXCONTAINER wsclean \
-            -abs-mem 140 \
+            -abs-mem 60 \
             -temp-dir ${tempdir}/ \
             -j ${SLURM_CPUS_PER_TASK} \
             -mgain 1.0 \
@@ -177,7 +177,7 @@ then
             -channel-range 4 5 \
             -interval 4 5 \
             -nwlayers ${SLURM_CPUS_PER_TASK} \
-            "${tempdir}/${obsnum}.ms" 
+            "${obsnum}.ms" 
 
     rm "${obsnum}_template-dirty.fits"
     mv "${obsnum}_template-image.fits" "${obsnum}_template.fits"
@@ -207,8 +207,9 @@ done
 set -o pipefail
 # Deep clean (for pipeline)
 singularity run $GXCONTAINER wsclean \
-        -abs-mem 140 \
+        -abs-mem 60 \
         -j ${SLURM_CPUS_PER_TASK} \
+        -parallel-gridding ${SLURM_CPUS_PER_TASK} \
         -temp-dir ${tempdir}/ \
         $multiscale \
         $scalebias \
@@ -218,7 +219,7 @@ singularity run $GXCONTAINER wsclean \
         -apply-primary-beam \
         -auto-mask ${msigma} \
         -auto-threshold ${tsigma} \
-        -name ${obsnum}_deep \
+        -name ${tempdir}/${obsnum}_deep \
         -size ${imsize} ${imsize} \
         -scale ${scale:0:8} \
         -weight briggs ${robust} \
@@ -228,19 +229,20 @@ singularity run $GXCONTAINER wsclean \
         -save-source-list \
         -fit-spectral-pol 2 \
         -data-column ${datacolumn} \
-        "${tempdir}/${obsnum}.ms" | tee wsclean.log
+        "${obsnum}.ms" | tee wsclean.log
 
 test_fail $?
+cp ${tempdir}/${obsnum}_deep* ./
 
 if [[ -e "${obsnum}_deep-MFS-image-pb.fits" ]]
 then
-    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
     rm -rf ${tempdir}/
+    # rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
+    # rm -rf ${tempdir}/
 else 
     echo "There is no final image so I haven't subtracted anything because I'm not sure what's wrong" 
-    rm -rf ${tempdir}/${obsnum}.ms
+    rm -rf ${tempdir}/
     exit 1
-    
 fi 
 
 
