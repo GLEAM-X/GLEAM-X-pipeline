@@ -29,7 +29,7 @@ fi
 
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
-tempdir=${GXTEMP}/${jobid}_${taskid}/
+
 
 
 function test_fail {
@@ -86,7 +86,6 @@ then
                                     --min-elevation 0.0 \
                                     --min-flux 5  \
                                     --check-fov \
-                                    --tempdir "${tempdir}" \
                                     $debugoption \
                                     --model-output "${submodel}" 
 fi
@@ -94,18 +93,84 @@ fi
 if [[ -e "${submodel}" ]]
 then
     echo "Running wslean outlier clean and subtraction... "
-    chmod +x "${submodel}"
-    mkdir -p ${tempdir}/
-    # cp -rf ${obsnum}.ms ${tempdir}/
+    if [[ -n $TMPDIR_SHM && -d $TMPDIR_SHM ]];then
+        ramDiskBase=$TMPDIR_SHM
+    else
+        ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
+    fi
+    tempdir="${ramDiskBase}/${jobid}_${taskid}"
+    mkdir -p "$tempdir"
+    [[ -d $tempdir ]] || die "RAM disk creation unsuccessful: $tempdir"
+    trap "rm -rf $ramDisk" EXIT
 
-    srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run ${GXCONTAINER} ./"${submodel}"
+    cp -rf ${obsnum}.ms ${tempdir}/
+
+    cd $tempdir
+
+    # Which data column to image
+    if [[ ! -z $debug ]]
+    then
+        datacolumn="CORRECTED_DATA"
+    else
+        datacolumn="DATA"
+    fi
+
+    singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
+
+    while IFS=":" read chg wcs
+    do  
+        
+        singularity run $GXCONTAINER chgcentre ${tempdir}/${obsnum}.ms $chg 
+        singularity run $GXCONTAINER chgcentre -zenith -shiftback ${tempdir}/${obsnum}.ms 
+        
+        export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
+        srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run $GXCONTAINER \
+        wsclean \
+            -mgain 0.8 \
+            -abs-mem 10 \
+            -nmiter 10 \
+            -niter 100000 \
+            -size 128 128 \
+            -pol XXYY \
+            -data-column ${datacolumn} \
+            -name ${wcs} \
+            -scale 10arcsec \
+            -weight brights 0.5 \
+            -auto-mask 3 \
+            -auto-threshold 1 \
+            -temp-dir ${tempdir} \
+            -join-channels \
+            -channels-out 64 \
+            -fit-spectral-pol 4 \
+            ${tempdir}/${obsnum}.ms | tee wsclean_outlier_${wcs}.log
+        
+        # Which data column to image
+        if [[ ! -z $debug ]]
+        then
+            singularity run $GXCONTAINER taql update ${tempdir}/${obsnum}.ms CORRECTED_DATA=CORRECTED_DATA-MODEL_DATA
+        else
+            singularity run $GXCONTAINER taql update ${tempdir}/${obsnum}.ms DATA=DATA-MODEL_DATA
+        fi
+
+        singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
+
+        echo "Removing outlier files"
+        rm *outlier*fits
+
+    done < ${submodel}
+
+    echo "Done with subtracting, chanigng coords back" 
+    coords=$(singularity run ${GXCONTAINER} calc_pointing.py "${datadir}/${obsnum}/${metafits}")
+    singularity run ${GXCONTAINER} chgcentre \
+            "${tempdir}/${obsnum}.ms" \
+            ${coords}
+
     test_fail $?
 
-    # rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
-    # rm -rf ${tempdir}/
+    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
+    rm -rf ${tempdir}/
     
-    echo "Removing outlier files"
-    rm *outlier*fits
+    
 else
     echo "No wsclean script ${submodel} found. Exiting. "
 fi

@@ -58,7 +58,7 @@ cd "${datadir}" || exit
 
 mkdir -p ${tempdir}/
 cp -rf ${obsnum}.ms ${tempdir}/
-
+test_fail $?
 
 # TODO: replace with find
 metafits="$(ls -t ${obsnum}*metafits* | head -1)"
