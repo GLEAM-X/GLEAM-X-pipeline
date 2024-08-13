@@ -30,7 +30,7 @@ fi
 tempdir="${ramDiskBase}${jobid}_${taskid}"
 mkdir -p "$tempdir"
 [[ -d $tempdir ]] || die "RAM disk creation unsuccessful: $tempdir"
-trap "rm -rf $ramDisk" EXIT
+trap "rm -rf $tempdir" EXIT
 # tempdir=${GXTEMP}/${jobid}_${taskid}/
 
 function test_fail {
