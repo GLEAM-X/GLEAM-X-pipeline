@@ -120,10 +120,17 @@ do
         fi
         cstart=${chans[$i]}
         cend=${chans[$j]}
-        singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
-        "_deep-${subchan}-image-pb.fits" \
-        "${obsnum}_deep-${subchan}-image-pb-" \
-        -c "$cstart-$cend"
+
+        if [[ ! -e "${obsnum}_deep-${subchan}-image-pb-XX-beam.fits" ]]
+        then 
+            # TODO: also add check for original beam image and just making symlink maybe? Don't know of a circumstance where we would have one but not the other though 
+            singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
+            "_deep-${subchan}-image-pb.fits" \
+            "${obsnum}_deep-${subchan}-image-pb-" \
+            -c "$cstart-$cend"
+        else
+            echo "Already have beam, masking image" 
+        fi
 
         singularity run ${GXCONTAINER} mask_image.py "${obsnum}_deep-${subchan}-image-pb.fits" \
         "${obsnum}_deep-${subchan}-image-pb-XX-beam.fits" \
@@ -275,10 +282,16 @@ do
             fi
             cstart=${chans[$i]}
             cend=${chans[$j]}
-            singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
-            "_deep-${subchan}-image-pb_warp.fits" \
-            "${obsnum}_deep-${subchan}-image-pb_warp-" \
-            -c "$cstart-$cend"
+            if [[ ! -e "${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits" ]]
+            then         
+                singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
+                "_deep-${subchan}-image-pb_warp.fits" \
+                "${obsnum}_deep-${subchan}-image-pb_warp-" \
+                -c "$cstart-$cend"
+            else 
+                ln -s ${obsnum}_deep-${subchan}-image-pb-XX-beam.fits ${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits 
+                ln -s ${obsnum}_deep-${subchan}-image-pb-YY-beam.fits ${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits 
+            
             singularity run ${GXCONTAINER} generate_weight_map.py "${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits" \
             "${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits" \
             "${obsnum}_deep-${subchan}-image-pb_warp_rms.fits"
