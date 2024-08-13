@@ -95,9 +95,7 @@ apt clean -y
 # RANDOM THINGS I DEFINE FOR OPTIMISING AND IMPROVEMENTS 
 #-------------------------------------------------
 
-export cpu_target="knl"
-export RUSTFLAGS="-C target-cpu=${cpu_target}"
-
+export cpu_target="cascadelake"
 
 # ------------------------------------------------
 # AWS Command Line
@@ -174,7 +172,7 @@ cd / \
     && cd mwa-reduce \
     && mkdir build \
     && cd build \
-    && cmake ../ \
+    && cmake -D CMAKE_CXX_FLAGS=-march=${cpu_target} ../ \
     && make -j8 \
     && cd / \
     && mv mwa-reduce opt
@@ -381,7 +379,7 @@ cd / \
     && cd EveryBeam \
     && mkdir build \
     && cd build \
-    && cmake .. \
+    && cmake -D CMAKE_CXX_FLAGS=-march=${cpu_target} .. \
     && make -j8 \
     && make install \
     && cd / \
@@ -403,7 +401,7 @@ cd / \
     && cd chgcentre \
     && mkdir build \
     && cd build \
-    && cmake .. \
+    && cmake -D CMAKE_CXX_FLAGS=-march=${cpu_target} .. \
     && make -j8 \
     && make install \
     && cd / \
@@ -418,7 +416,7 @@ cd / \
     && cd aoflagger \
     && mkdir build \
     && cd build \
-    && cmake .. \
+    && cmake -D CMAKE_CXX_FLAGS=-march=${cpu_target} .. \
      -DCFITSIO_ROOT_DIR="/usr/local" \
    && make -j8 \
    && make install \
@@ -475,14 +473,18 @@ export RUST_HOME=/opt/rust
 export RUSTUP_HOME=/opt/rust
 export CARGO_HOME=/opt/cargo
 
+
+
 export PATH=$CARGO_HOME/bin:$PATH 
+export CARGO_TARGET_APPLIES_TO_HOST="false"
+ENALBE_LIB_ONLY=ON
 
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -sSf | sh -s -- -y
 
 
 export MAKEFLAGS="-j $MAKEFLAGS"
 
-cargo install --force cargo-make
+cargo install --locked --force cargo-make
 # ------------------------------------------------
 
 # ------------------------------------------------
@@ -493,7 +495,7 @@ cd /opt && \
     cd Birli && \
     git checkout v0.9.1 && \
     cargo make install_deps && \
-    cargo install --features=aoflagger --path . 
+    cargo install --locked --features=aoflagger --path . 
 # ------------------------------------------------
 
 # ------------------------------------------------
@@ -502,7 +504,7 @@ cd /opt && \
 cd /opt && \
     git clone https://github.com/MWATelescope/mwa_hyperdrive && \
     cd mwa_hyperdrive && \
-    cargo install --features=all-static --path .
+    RUSTFLAGS="-C target-cpu=${cpu_target}" cargo install --locked --features=all-static --path .
 # ------------------------------------------------
 
 # ------------------------------------------------
