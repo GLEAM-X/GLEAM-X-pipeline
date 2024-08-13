@@ -291,6 +291,8 @@ do
             else 
                 ln -s ${obsnum}_deep-${subchan}-image-pb-XX-beam.fits ${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits 
                 ln -s ${obsnum}_deep-${subchan}-image-pb-YY-beam.fits ${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits 
+            fi 
+            
             
             singularity run ${GXCONTAINER} generate_weight_map.py "${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits" \
             "${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits" \
