@@ -199,7 +199,7 @@ do
         then
             singularity run $GXCONTAINER lookup_jones.py ${obsnum} _template.fits ${obsnum}_000${n}- -c $cstart-$cend --wsclean_names
         fi
-        ln -s "${obsnum}_000${n}-${pol}-beam.fits" "${obsnum}_deep-000${n}-beam-${pol}.fits"
+        ln -s "${obsnum}_000${n}-${pol}-beam.fits" "${tempdir}/${obsnum}_deep-000${n}-beam-${pol}.fits"
         # ln -s "${obsnum}_000${n}-${pol}-beam.fits" "${obsnum}_deep-000${n}-beam-${pol}.fits"
     done
 done
