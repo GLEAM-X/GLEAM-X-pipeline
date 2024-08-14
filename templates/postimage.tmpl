@@ -129,8 +129,8 @@ do
                 "${obsnum}_deep-${subchan}-image-pb-" \
                 -c "$cstart-$cend"
             else 
-                ln -s "${obsnum}_${subchan}-XX-beam.fits" ${obsnum}_deep-${subchan}-image-pb-XX-beam.fits
-                ln -s "${obsnum}_${subchan}-YY-beam.fits" ${obsnum}_deep-${subchan}-image-pb-YY-beam.fits
+                ln -s "${PWD}/${obsnum}_${subchan}-XX-beam.fits" ${PWD}/${obsnum}_deep-${subchan}-image-pb-XX-beam.fits
+                ln -s "${PWD}/${obsnum}_${subchan}-YY-beam.fits" ${PWD}/${obsnum}_deep-${subchan}-image-pb-YY-beam.fits
         fi 
 
 
@@ -293,8 +293,8 @@ do
                     "${obsnum}_deep-${subchan}-image-pb_warp-" \
                     -c "$cstart-$cend"
                 else 
-                    ln -s ${obsnum}_${subchan}-XX-beam.fits ${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits 
-                    ln -s ${obsnum}_${subchan}-YY-beam.fits ${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits 
+                    ln -s ${PWD}/${obsnum}_${subchan}-XX-beam.fits ${PWD}/${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits 
+                    ln -s ${PWD}/${obsnum}_${subchan}-YY-beam.fits ${PWD}/${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits 
             fi 
             
             
