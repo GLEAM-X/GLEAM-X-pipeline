@@ -217,6 +217,7 @@ singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINE
         -niter 10000000 \
         -reuse-primary-beam \
         -apply-primary-beam \
+        -mwa-path ${GXMWAPB} \
         -auto-mask ${msigma} \
         -auto-threshold ${tsigma} \
         -name ${tempdir}/${obsnum}_deep \
