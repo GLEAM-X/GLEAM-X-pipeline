@@ -22,14 +22,13 @@ fi
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
 
-if [[ -n $TMPDIR_SHM && -d $TMPDIR_SHM ]];then
-    ramDiskBase=$TMPDIR_SHM
-else
+# if [[ -n $TMPDIR_SHM && -d $TMPDIR_SHM ]];then
+#     ramDiskBase=$TMPDIR_SHM
+# else
     ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
-fi
+# fi
 tempdir="${ramDiskBase}${jobid}_${taskid}"
 mkdir -p "$tempdir"
-[[ -d $tempdir ]] || die "RAM disk creation unsuccessful: $tempdir"
 trap "rm -rf $tempdir" EXIT
 # tempdir=${GXTEMP}/${jobid}_${taskid}/
 
