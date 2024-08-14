@@ -491,7 +491,7 @@ cargo install --locked --force cargo-make
 # birli
 # ------------------------------------------------
 cd /opt && \
-    git clone https://github.com/MWATelescope/Birli.git@v0.9.1 && \
+    git clone https://github.com/MWATelescope/Birli && \
     cd Birli && \
     git checkout v0.9.1 && \
     cargo make install_deps && \
