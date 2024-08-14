@@ -206,7 +206,7 @@ then
             di-calibrate \
             --max-iterations 500 \
             --timesteps {0..9} \
-            --num-sources 1000 \
+            --num-sources 250 \
             --uvw-min "${minuv}lambda" \
             --uvw-max 1667lambda \
             --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
@@ -253,7 +253,7 @@ then
             di-calibrate \
             --timesteps {20..29} \
             --max-iterations 500 \
-            --num-sources 1000 \
+            --num-sources 250 \
             --uvw-min "${minuv}lambda" \
             --uvw-max 1667lambda \
             --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
@@ -299,7 +299,7 @@ else
         di-calibrate \
         --uvw-min "${minuv}lambda" \
         --max-iterations 500 \
-        --num-sources 1000 \
+        --num-sources 250 \
         --uvw-max 1667lambda \
         --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
         --outputs "${solutions}" \
