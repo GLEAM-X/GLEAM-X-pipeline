@@ -126,7 +126,8 @@ then
         singularity run -B ${tempdir} $GXCONTAINER \
         wsclean \
             -mgain 0.8 \
-            -abs-mem 10 \
+            -j ${SLURM_CPUS_PER_TASK} \
+            -abs-mem 20 \
             -nmiter 10 \
             -niter 100000 \
             -size 128 128 \
