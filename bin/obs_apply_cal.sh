@@ -126,9 +126,9 @@ then
     error="${error}_%a"
 fi
 
-# sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > ${script}.sbatch
-echo "srun --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
+# # sbatch submissions need to start with a shebang
+# echo '#!/bin/bash' > ${script}.sbatch
+# echo "singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
 if [ ! -z ${GXNCPULINE} ]
 then
@@ -137,7 +137,7 @@ then
 fi
 
 sub="sbatch --begin=now+5minutes  --export=ALL --time=01:00:00 --mem=5G  --output=${output} --error=${error} "
-sub="${sub} ${queue} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${script}.sbatch"
+sub="${sub} ${queue} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${script}"
 
 if [[ ! -z ${tst} ]]
 then

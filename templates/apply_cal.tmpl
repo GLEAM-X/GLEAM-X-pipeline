@@ -42,7 +42,7 @@ base=BASEDIR
 debug=DEBUG
 
 # apply calibration
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 cd "${base}/${obsnum}" || exit
 metafits="${obsnum}.metafits"
@@ -64,7 +64,7 @@ then
     # Checking if there is a gross sidelobe: 
     if [[ ! -e "${obsnum}_beamlobes.txt" ]]
     then
-        get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
+        singularity run ${GXCONTAINER} get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
     else
         echo "Already have the beam, not recalculating"
     fi 
@@ -79,12 +79,12 @@ then
         self="False"
     fi 
 
-    get_mwa_pb_lobes.py ${metafits} -mM > ${obsnum}_mainlobes.txt
+    singularity run ${GXCONTAINER} get_mwa_pb_lobes.py ${metafits} -mM > ${obsnum}_mainlobes.txt
     ra_mainlobe=$(cat ${obsnum}_mainlobes.txt | awk '{print $2}')
     dec_mainlobe=$(cat ${obsnum}_mainlobes.txt | awk '{print $3}')
 
     # Check if crab or cyg is in the main fov
-    ateam_fov=$(check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe})
+    ateam_fov=$(singularity run ${GXCONTAINER} check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe})
     if [[ "$ateam_fov" == "False" ]]
     then
         echo "There is no bright thing in main FOV, no self-cal needed!!"
@@ -110,7 +110,7 @@ fi
 if [[ ! -e "${calfile}" ]]
 then
     echo "Could not find calibrator file ${calid}"
-    track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+    singularity run ${GXCONTAINER} track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
     exit 1
 fi
 
@@ -126,12 +126,12 @@ echo "Calibration file is ${calfile}"
 # If in debugging mode, apply to the CORRECTED_DATA column
 if [[ ! -z $debug ]]
 then
-    applysolutions \
+    singularity run ${GXCONTAINER} applysolutions \
                 ${obsnum}.ms \
                 "${calfile}"
 # If in production mode, apply to the DATA column
 else
-    applysolutions \
+    singularity run ${GXCONTAINER} applysolutions \
                 -nocopy \
                 ${obsnum}.ms \
                 "${calfile}"
@@ -144,5 +144,5 @@ test_fail $?
 #     rm -rf ${base}/${obsnum}/${obsnum}.ms && cp -rf ${datadir}/${obsnum}.ms ${base}/${obsnum}/
 # fi
 
-track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
-track_task.py obs_calibrator --obs_id "${obsnum}" --cal_id "${calid}"
+singularity run ${GXCONTAINER} track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+singularity run ${GXCONTAINER} track_task.py obs_calibrator --obs_id "${obsnum}" --cal_id "${calid}"
