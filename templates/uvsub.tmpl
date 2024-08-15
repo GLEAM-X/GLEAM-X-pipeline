@@ -156,7 +156,7 @@ then
         echo "Removing outlier files"
         rm *outlier*fits
 
-    done < ${datadir}/${submodel}
+    done < ${datadir}/${obsnum}/${submodel}
 
     echo "Done with subtracting, chanigng coords back" 
     coords=$(singularity run ${GXCONTAINER} calc_pointing.py "${datadir}/${obsnum}/${metafits}")
