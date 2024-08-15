@@ -101,7 +101,7 @@ then
     tempdir="${ramDiskBase}/${jobid}_${taskid}"
     mkdir -p "$tempdir"
     [[ -d $tempdir ]] || die "RAM disk creation unsuccessful: $tempdir"
-    trap "rm -rf $ramDisk" EXIT
+    trap "rm -rf $tempdir" EXIT
 
     cp -rf ${obsnum}.ms ${tempdir}/
 
@@ -115,15 +115,15 @@ then
         datacolumn="DATA"
     fi
 
-    singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
+    singularity run -B ${tempdir} $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
 
     while IFS=":" read chg wcs
     do  
         
-        singularity run $GXCONTAINER chgcentre ${tempdir}/${obsnum}.ms $chg 
-        singularity run $GXCONTAINER chgcentre -zenith -shiftback ${tempdir}/${obsnum}.ms 
+        singularity run -B ${tempdir} $GXCONTAINER chgcentre ${tempdir}/${obsnum}.ms $chg 
+        singularity run -B ${tempdir} $GXCONTAINER chgcentre -zenith -shiftback ${tempdir}/${obsnum}.ms 
         
-        singularity run $GXCONTAINER \
+        singularity run -B ${tempdir} $GXCONTAINER \
         wsclean \
             -mgain 0.8 \
             -abs-mem 10 \
@@ -146,12 +146,12 @@ then
         # Which data column to image
         if [[ ! -z $debug ]]
         then
-            singularity run $GXCONTAINER taql update ${tempdir}/${obsnum}.ms CORRECTED_DATA=CORRECTED_DATA-MODEL_DATA
+            singularity run -B ${tempdir} $GXCONTAINER taql update ${tempdir}/${obsnum}.ms CORRECTED_DATA=CORRECTED_DATA-MODEL_DATA
         else
-            singularity run $GXCONTAINER taql update ${tempdir}/${obsnum}.ms DATA=DATA-MODEL_DATA
+            singularity run -B ${tempdir} $GXCONTAINER taql update ${tempdir}/${obsnum}.ms DATA=DATA-MODEL_DATA
         fi
 
-        singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
+        singularity run -B ${tempdir} $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
 
         echo "Removing outlier files"
         rm *outlier*fits
@@ -160,7 +160,7 @@ then
 
     echo "Done with subtracting, chanigng coords back" 
     coords=$(singularity run ${GXCONTAINER} calc_pointing.py "${datadir}/${obsnum}/${metafits}")
-    singularity run ${GXCONTAINER} chgcentre \
+    singularity run -B ${tempdir} ${GXCONTAINER} chgcentre \
             "${tempdir}/${obsnum}.ms" \
             ${coords}
 
