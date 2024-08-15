@@ -147,9 +147,9 @@ then
         # Which data column to image
         if [[ ! -z $debug ]]
         then
-            singularity run -B ${tempdir} $GXCONTAINER taql update ${tempdir}/${obsnum}.ms CORRECTED_DATA=CORRECTED_DATA-MODEL_DATA
+            singularity run -B ${tempdir} $GXCONTAINER taql update ${tempdir}/${obsnum}.ms set CORRECTED_DATA=CORRECTED_DATA-MODEL_DATA
         else
-            singularity run -B ${tempdir} $GXCONTAINER taql update ${tempdir}/${obsnum}.ms DATA=DATA-MODEL_DATA
+            singularity run -B ${tempdir} $GXCONTAINER taql update ${tempdir}/${obsnum}.ms set DATA=DATA-MODEL_DATA
         fi
 
         singularity run -B ${tempdir} $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
