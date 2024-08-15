@@ -105,7 +105,7 @@ then
 
     cp -rf ${obsnum}.ms ${tempdir}/
 
-    cd $tempdir
+    # cd $tempdir
 
     # Which data column to image
     if [[ ! -z $debug ]]
@@ -166,7 +166,7 @@ then
 
     test_fail $?
 
-    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
+    rm -rf ${datadir}/${obsnum}/${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms "${datadir}/${obsnum}/"
     rm -rf ${tempdir}/
     
     
