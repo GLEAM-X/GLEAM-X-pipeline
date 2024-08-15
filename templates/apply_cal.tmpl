@@ -47,14 +47,14 @@ track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date
 cd "${base}/${obsnum}" || exit
 metafits="${obsnum}.metafits"
 
-if [ ! -z ${GXTEMP} ]
-then
-    mkdir -p ${GXTEMP}/${jobid}/
-    cp -rf ${obsnum}.ms ${GXTEMP}/${jobid}/
-    datadir="${GXTEMP}/${jobid}"
-else
-    datadir="${base}/${obsnum}"
-fi 
+# if [ ! -z ${GXTEMP} ]
+# then
+#     mkdir -p ${GXTEMP}/${jobid}/
+#     cp -rf ${obsnum}.ms ${GXTEMP}/${jobid}/
+#     datadir="${GXTEMP}/${jobid}"
+# else
+#     datadir="${base}/${obsnum}"
+# fi 
 
 
 
@@ -139,10 +139,10 @@ fi
 
 test_fail $?
 
-if [ ! -z ${GXTEMP} ]
-then
-    rm -rf ${base}/${obsnum}/${obsnum}.ms && cp -rf ${datadir}/${obsnum}.ms ${base}/${obsnum}/
-fi
+# if [ ! -z ${GXTEMP} ]
+# then
+#     rm -rf ${base}/${obsnum}/${obsnum}.ms && cp -rf ${datadir}/${obsnum}.ms ${base}/${obsnum}/
+# fi
 
 track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
 track_task.py obs_calibrator --obs_id "${obsnum}" --cal_id "${calid}"
