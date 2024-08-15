@@ -26,20 +26,20 @@ debug=DEBUG
 function test_fail {
 if [[ $1 != 0 ]]
 then
-    track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+    singularity run ${GXCONTAINER} track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
     exit "$1"
 fi
 }
 
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 cd "$datadir/${obsnum}" || exit 1
 if [[ -z $debug ]]
 then
-    ms_flag_by_uvdist.py "${obsnum}.ms" DATA -a
+    singularity run ${GXCONTAINER} ms_flag_by_uvdist.py "${obsnum}.ms" DATA -a
 else
-    ms_flag_by_uvdist.py "${obsnum}.ms" CORRECTED_DATA -a 
+    singularity run ${GXCONTAINER} ms_flag_by_uvdist.py "${obsnum}.ms" CORRECTED_DATA -a 
 fi
 
-track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+singularity run ${GXCONTAINER} track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
 
