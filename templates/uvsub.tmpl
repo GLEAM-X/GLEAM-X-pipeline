@@ -123,8 +123,7 @@ then
         singularity run $GXCONTAINER chgcentre ${tempdir}/${obsnum}.ms $chg 
         singularity run $GXCONTAINER chgcentre -zenith -shiftback ${tempdir}/${obsnum}.ms 
         
-        export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-        srun -N 1 -n ${SLURM_NTASKS} -c ${SLURM_CPUS_PER_TASK} -m block:block:block singularity run $GXCONTAINER \
+        singularity run $GXCONTAINER \
         wsclean \
             -mgain 0.8 \
             -abs-mem 10 \
