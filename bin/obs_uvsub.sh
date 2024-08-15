@@ -115,10 +115,10 @@ chmod 755 "${script}"
 if [ ! -z ${GXNCPULINE} ]
 then
     # autoflag only needs a single CPU core
-    GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=10 --mem=50G"
+    GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=10 "
 fi
 
-sub="sbatch --begin=now+5minutes --export=ALL  --time=06:00:00 --output=${output} --error=${error}"
+sub="sbatch --begin=now+5minutes --export=ALL --mem=50G --time=06:00:00 --output=${output} --error=${error}"
 sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
