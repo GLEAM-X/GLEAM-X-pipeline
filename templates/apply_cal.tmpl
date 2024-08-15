@@ -127,13 +127,13 @@ echo "Calibration file is ${calfile}"
 if [[ ! -z $debug ]]
 then
     applysolutions \
-                ${datadir}/${obsnum}.ms \
+                ${obsnum}.ms \
                 "${calfile}"
 # If in production mode, apply to the DATA column
 else
     applysolutions \
                 -nocopy \
-                ${datadir}/${obsnum}.ms \
+                ${obsnum}.ms \
                 "${calfile}"
 fi
 
