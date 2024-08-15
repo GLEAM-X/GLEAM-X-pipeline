@@ -117,7 +117,7 @@ then
 
     singularity run -B ${tempdir} $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
 
-    while IFS=":" read chg wcs
+    while IFS=": " read chg wcs
     do  
         
         singularity run -B ${tempdir} $GXCONTAINER chgcentre ${tempdir}/${obsnum}.ms $chg 
