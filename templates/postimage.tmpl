@@ -193,7 +193,7 @@ do
             --vm 10 \
             --progress \
             --testimage \
-            --cores ${GXNPCPUS} \
+            --cores ${SLURM_CPUS_PER_TASK} \
             --signal peak_flux_1 \
             --enforce-min-srcs 100
             # --signal peak_flux --noise local_rms --SNR 10
