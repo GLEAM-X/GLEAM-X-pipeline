@@ -1,6 +1,5 @@
 #! /bin/bash -l
 
-pipeuser=PIPEUSER
 obslist=OBSLIST
 basedir=BASEDIR
 acacia=BUCKET
@@ -18,18 +17,19 @@ module load singularity
 # DOWNLOAD FROM ACACIA 
 # -----------------------------------------------------------------------------
 
-rclone copy --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
+rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
 
 # -----------------------------------------------------------------------------
 # UNTAR OBSIDS AND MAKE NICE DIRECTORY STRUCTURE
 # -----------------------------------------------------------------------------
 
+echo "Successfully downloaded all tar files now unzipping and making directories" 
 
 # list=$(awk '{print substr($1,8,10)}' < "${obslist}_manta.tmp")
 list=()
-while IFS= read -r line; do arr+=("$line"); done < ${obslist} 
+while IFS= read -r line; do list+=("$line"); done < ${obslist} 
 n=1
-for obsnum in $list
+for obsnum in ${list[@]}
 do 
     cd $basedir 
     obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
@@ -47,11 +47,13 @@ do
     fi
 done 
 
+echo "Downloaded obsids! Going to run flagging for each one now!" 
+
 # -----------------------------------------------------------------------------
 # RUN FLAGMWA (IF NEEDED) AND FLAGANTENNA 
 # -----------------------------------------------------------------------------
 
-for obsnum in $list
+for obsnum in ${list[@]}
 do
     cd ${basedir}/${obsnum}/
     flags=""
