@@ -12,27 +12,25 @@ module load singularity/3.11.4-slurm
 
 
 # Basic configuration
-cluster=            # System-wide name of cluster, e.g. "garrawarla". This does not have to have a one-to-one correspondance to the
+cluster="dug"            # System-wide name of cluster, e.g. "garrawarla". This does not have to have a one-to-one correspondance to the
                                 # actual system name.
 export GXUSER=$(whoami)         # User name of the operator running the pipeline. This is here to generate user-specific filenames and paths. 
                                 # It is recommend to use the login account name, although in principal this is not critical and other approaches
                                 # could be adopted
 export GXVERSION='3.1.0'        # Version number of the pipeline. This should not be changed. Currently it is defined here but not used.  
-export GXACCOUNT=               # The SLURM account jobs will be run under. e.g. 'pawsey0272'. Empty will not pass through a 
-                                # corresponding --account=${GXACCOUNT} to the slurm submission. Only relevant if SLURM is tracking time usage 
-export GXBASE= #"${GXUSER}/GLEAM-X-pipeline" # Path to base of GLEAM-X Pipeline where the repository was 'git clone' into, e.g. "/astro/mwasci/tgalvin" 
+export GXACCOUNT=               # The SLURM account jobs will be run under. e.g. 'pawsey0272'. Empty will not pass through a corresponding --account=${GXACCOUNT} to the slurm submission. For DUG, this is the project name but is not needed since the queue is what tracks time/useage 
+export GXBASE= #"${GXUSER}/GLEAM-X-pipeline" # Path to base of GLEAM-X Pipeline where the repository was 'git clone' into, e.g. "/data/curtin_gleam/sw/GLEAM-X-pipeline/" 
 export GXSCRATCH=  #"/scratch/mwasci/${GXUSER}"     # Path to scratch space used for processing on the HPC environment, e.g. /scratch
 export GXHOME="${GXSCRATCH}"    # HOME space for some tasks. In some system configurations singularity can not mount $HOMR, but applications (e.g. CASA, python) would like 
                                 # one to be available to cache folders. This does not have to be an actual $HOME directory, just a folder with read and write access. 
                                 # Suggestion is the same path as the scratch space, e.g. $GXSCRATCH. 
-export GXCONTAINER="${GXBASE}/gleamx_container.img"   # Absolute path to the GLEAM-X singularity container, including the file name, e.g. "${GXSCRATCH}/gleamx.img"
-                                              # This container is still being evaluated and available when requested from Tim Galvin. In a future update
-                                              # the container will be automatically downloaded alongside other data dependencies. 
+export GXCONTAINER="${GXBASE}/gleamx_container_dug.img"   # Absolute path to the GLEAM-X singularity container, including the file name, e.g. "${GXSCRATCH}/gleamx.img"
+                                              # This container can be rebuilt, DUG staff are happy to help and build one that is optimised for various CPU configs/types 
 
 # SLURM compute schedular information
 export GXCOMPUTER=${cluster}    # Maintained for compatability. Describes the name of the cluster, e.g. "magnus".
 export GXCLUSTER=${cluster}     # Maintained for compatability. Describes the name of the cluster, e.g. "magnus".
-export GXSTANDARDQ=      # Slurm queue to submit tasks to, e.g. "workq". Available queues can be inspected using 'sinfo' on a system where the slurm schedular is available
+export GXSTANDARDQ=      # Slurm queue to submit tasks to, e.g. "workq". Available queues can be inspected using 'sinfo' on a system where the slurm schedular is available. In DUG, this is the project name e.g. curtin_gleam
 
 # NEED TO CHECK WHETHER THEY HAVE THE NVME TEMP OR JUST A TEMP RAMDISK!
 export GXTEMP=
@@ -57,7 +55,7 @@ export GXNCPULINE="--ntasks-per-node=${GXNCPUS}"            # Informs the SLURM 
                                 # 24 cores may be requested in a slurm request, but there are 48 available in the job (hyper-threaded cores) 
 
 # SLURM job submission details 
-export GXTASKLINE=                              # Reserved space for additional slurm sbatch options, if needed. This is passed to all SLURM sbatch calls. 
+export GXTASKLINE="--constriant=knl"                              # Reserved space for additional slurm sbatch options, if needed. This is passed to all SLURM sbatch calls. THIS DUG CONSTRAINT IS TO AVOID ACCIDENTALLY SUBMITTING TO EXPENSIVE NODES BUT WILL DEFAULT INSTEAD TO CHEAP BUT SLOW, CHANGE AS APPROPRIATE AT OWN RISK! 
 export GXLOG="${GXBASE}/log_${GXCLUSTER}"       # Path to output task logs, e.g. ${GXBASE}/queue/log_${GXCLUSTER}. It is recommended that this is cluster specific. 
 export GXSCRIPT="${GXBASE}/script_${GXCLUSTER}" # Path to place generated template scripts. e.g. "${GXBASE}/script_${GXCLUSTER}". It is recommended that this is cluster specific.
 export GXTRACK='no-track'                       # Directive to inform task tracking for meta-database. 'track' will track task progression. Anything else will disable tracking. 
@@ -77,10 +75,10 @@ export GXMWALOOKUP="${GXBASE}/data/pb"  # The MWA PB lookup HDF5's used by looku
                                         # This is currently not used, as the container currently maintains a copy. 
 
 # Details for obs_manta
-export GXCOPYA=             # Account to submit obs_manta.sh job under, if time accounting is being performed by SLURM.
+export GXCOPYA=${GXSTANDARDQ}             # Account to submit obs_manta.sh job under, if time accounting is being performed by SLURM.
                             # Leave this empty if the job is to be submitted as the user and there is no time accounting.
-export GXCOPYQ=      # A required parameter directing the job to a particular queue on $GXCOPYM. Set as just the queue name, e.g. 'copyq'
-export GXCOPYM=       # A required parameter directing the job to be submitted to a particular machine. Set as just the machine name, e.g. 'zeus'
+export GXCOPYQ=${GXSTANDARDQ}      # A required parameter directing the job to a particular queue on $GXCOPYM. Set as just the queue name, e.g. 'copyq'
+export GXCOPYM=${GXSTANDARDQ}       # A required parameter directing the job to be submitted to a particular machine. Set as just the machine name, e.g. 'zeus'
 
 # Staging area
 export GXSTAGE=""             # To support the polarisation effort led by Xiang Zhang and George Heald at CSIRO, calibrated measurement sets
