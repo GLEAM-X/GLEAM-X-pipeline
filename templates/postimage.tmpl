@@ -122,7 +122,7 @@ do
         cend=${chans[$j]}
         if [[ ! -e "${obsnum}_deep-${subchan}-image-pb-XX-beam.fits" ]]
         then
-            if [[ ! -e "${obsnum}_${subchan}-XX-beam.fits"]]
+            if [[ ! -e "${obsnum}_${subchan}-XX-beam.fits" ]]
             then 
                 singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
                 "_deep-${subchan}-image-pb_warp.fits" \
@@ -286,7 +286,7 @@ do
             cend=${chans[$j]}
             if [[ ! -e "${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits" ]]
             then
-                if [[ ! -e "${obsnum}_${subchan}-XX-beam.fits"]]
+                if [[ ! -e "${obsnum}_${subchan}-XX-beam.fits" ]]
                 then 
                     singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
                     "_deep-${subchan}-image-pb_warp.fits" \
