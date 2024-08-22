@@ -199,7 +199,7 @@ do
         then
             singularity run $GXCONTAINER lookup_jones.py ${obsnum} _template.fits ${obsnum}_000${n}- -c $cstart-$cend --wsclean_names
         fi
-        ln -s "${PWD}/${obsnum}_000${n}-${pol}-beam.fits" "${tempdir}/${obsnum}_deep-000${n}-beam-${pol}.fits"
+        ln -s "${PWD}/${obsnum}_000${n}-${pol}-beam.fits" "${PWD}/${obsnum}_deep-000${n}-beam-${pol}.fits"
         # ln -s "${obsnum}_000${n}-${pol}-beam.fits" "${obsnum}_deep-000${n}-beam-${pol}.fits"
     done
 done
@@ -221,7 +221,7 @@ singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINE
         -mwa-path ${GXMWAPB} \
         -auto-mask ${msigma} \
         -auto-threshold ${tsigma} \
-        -name ${tempdir}/${obsnum}_deep \
+        -name ${obsnum}_deep \
         -size ${imsize} ${imsize} \
         -scale ${scale:0:8} \
         -weight briggs ${robust} \
