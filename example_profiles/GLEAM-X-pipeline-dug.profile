@@ -4,7 +4,7 @@ echo "loading gleam-x profile"
 
 # Any system module file should be loaded here. Aside from singularity and slurm there are
 # no additional modules that are expected to be needed
-module load singularity/3.11.4-slurm
+module load singularity
 
 # Before running obs_*.sh scripts ensure the completed configuration file has been sourced. 
 # As a convention when specifying paths below, please ensure that they do not end with a trailing '/', as
@@ -24,7 +24,12 @@ export GXSCRATCH=  #"/scratch/mwasci/${GXUSER}"     # Path to scratch space used
 export GXHOME="${GXSCRATCH}"    # HOME space for some tasks. In some system configurations singularity can not mount $HOMR, but applications (e.g. CASA, python) would like 
                                 # one to be available to cache folders. This does not have to be an actual $HOME directory, just a folder with read and write access. 
                                 # Suggestion is the same path as the scratch space, e.g. $GXSCRATCH. 
-export GXCONTAINER="${GXBASE}/gleamx_container_dug.img"   # Absolute path to the GLEAM-X singularity container, including the file name, e.g. "${GXSCRATCH}/gleamx.img"
+# SETTING DEFAULT NODE TYPE TO KNL ON DUG, THESE AREN'T NEEDED ON OTHER PLATFORMS BUT NICE WAYTO ENSURE DIFFERENT JOBS CAN EASILY REQUEST DIFFERENT RESOURCES 
+export GXNODETYPE="knl"
+# SLURM job submission details 
+export GXTASKLINE="--constriant=${GXNODETYPE}"                              # Reserved space for additional slurm sbatch options, if needed. This is passed to all SLURM sbatch calls. THIS DUG CONSTRAINT IS TO AVOID ACCIDENTALLY SUBMITTING TO EXPENSIVE NODES BUT WILL DEFAULT INSTEAD TO CHEAP BUT SLOW, CHANGE AS APPROPRIATE AT OWN RISK! 
+export GXCONTAINERPATH="${GXBASE}/"
+export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${GXNODETYPE}.img"   # Absolute path to the GLEAM-X singularity container, including the file name, e.g. "${GXSCRATCH}/gleamx.img"
                                               # This container can be rebuilt, DUG staff are happy to help and build one that is optimised for various CPU configs/types 
 
 # SLURM compute schedular information
@@ -54,8 +59,6 @@ export GXNCPULINE="--ntasks-per-node=${GXNCPUS}"            # Informs the SLURM 
                                 # There may be some interaction between this line and $GXNCPUS when deployed. For instance, on magnus only 
                                 # 24 cores may be requested in a slurm request, but there are 48 available in the job (hyper-threaded cores) 
 
-# SLURM job submission details 
-export GXTASKLINE="--constriant=knl"                              # Reserved space for additional slurm sbatch options, if needed. This is passed to all SLURM sbatch calls. THIS DUG CONSTRAINT IS TO AVOID ACCIDENTALLY SUBMITTING TO EXPENSIVE NODES BUT WILL DEFAULT INSTEAD TO CHEAP BUT SLOW, CHANGE AS APPROPRIATE AT OWN RISK! 
 export GXLOG="${GXBASE}/log_${GXCLUSTER}"       # Path to output task logs, e.g. ${GXBASE}/queue/log_${GXCLUSTER}. It is recommended that this is cluster specific. 
 export GXSCRIPT="${GXBASE}/script_${GXCLUSTER}" # Path to place generated template scripts. e.g. "${GXBASE}/script_${GXCLUSTER}". It is recommended that this is cluster specific.
 export GXTRACK='no-track'                       # Directive to inform task tracking for meta-database. 'track' will track task progression. Anything else will disable tracking. 
