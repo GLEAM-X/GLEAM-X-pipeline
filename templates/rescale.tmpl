@@ -40,7 +40,7 @@ then
         sublistfilt=${sublist/.txt/_filtered.txt}
         obslistfilt=${obslist/.txt/_filtered.txt}
         echo $obslistconcat
-        filter_blurred_obsids.py \
+        singularity run ${GXCONTAINER} filter_blurred_obsids.py \
         "${obslistconcat}" \
         "${projpsf}" \
         "${sublistfilt}" \
@@ -86,7 +86,7 @@ do
     fi
 done
 
-polyfit_snapshots.py \
+singularity run ${GXCONTAINER} polyfit_snapshots.py \
 --filelist "${sublist}" \
 --skymodel="${GXBASE}"/models/GGSM_sparse_unresolved.fits \
 $readfile $write --rescale --correctall --overwrite --plot \
