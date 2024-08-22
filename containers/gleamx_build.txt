@@ -95,7 +95,7 @@ apt clean -y
 # RANDOM THINGS I DEFINE FOR OPTIMISING AND IMPROVEMENTS 
 #-------------------------------------------------
 
-export cpu_target="cascadelake"
+export cpu_target="knl"
 
 # ------------------------------------------------
 # AWS Command Line
@@ -486,6 +486,14 @@ export MAKEFLAGS="-j $MAKEFLAGS"
 
 cargo install --locked --force cargo-make
 # ------------------------------------------------
+# ------------------------------------------------
+# giant-squid
+# ------------------------------------------------
+cd /opt && \
+    git clone https://github.com/MWATelescope/giant-squid.git && \
+    cd giant-squid && \
+    RUSTFLAGS="-C target-cpu=${cpu_target}" cargo install --locked --path . 
+
 
 # ------------------------------------------------
 # birli
@@ -497,6 +505,7 @@ cd /opt && \
     cargo make install_deps && \
     cargo install --locked --features=aoflagger --path . 
 # ------------------------------------------------
+
 
 # ------------------------------------------------
 # hyperdrive
