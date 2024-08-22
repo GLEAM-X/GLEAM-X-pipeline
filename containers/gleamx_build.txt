@@ -501,7 +501,7 @@ cd /opt && \
 cd /opt && \
     git clone https://github.com/MWATelescope/Birli && \
     cd Birli && \
-    git checkout v0.9.1 && \
+    git checkout v0.13.0 && \
     cargo make install_deps && \
     cargo install --locked --features=aoflagger --path . 
 # ------------------------------------------------
