@@ -219,7 +219,7 @@ singularity run $GXCONTAINER taql "select ctod(TIME), gsum(ntrue(amplitude(DATA[
 rm "${obsnum}"_transient-t????-*.fits
 # rm "${obsnum}_transient_concatenated_table.fits"
 
-rm -rf ${datadir}/${obsnum}/${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms "${datadir}/${obsnum}/"
+rm -rf ${base}/${obsnum}/${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms "${base}/${obsnum}/"
 rm -rf ${tempdir}/
 
 
