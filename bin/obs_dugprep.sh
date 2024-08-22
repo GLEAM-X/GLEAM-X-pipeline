@@ -20,6 +20,9 @@ exit 1;
 project=
 tst=
 acacia=
+timeres=
+freqres=
+edgeflag=80
 # parse args and set options
 while getopts ':ta:p:' OPTION
 do
@@ -49,14 +52,46 @@ then
     usage
 fi
 
+if [[ -z ${acacia} ]]
+then 
+    asvo_flag=1
+fi
+
 # queue="-p ${GXSTANDARDQ}"
 base="${GXSCRATCH}/$project"
+cd "${base}" 
 # code="${GXBASE}"
+
+
+list=$(cat "${obslist}")
+for obsnum in $list
+do
+    # Note this implicitly 
+    if [[ $obsnum -lt 1151402936 ]] ; then
+        telescope="MWA128T"
+        basescale=1.1
+        if [[ -z $freqres ]] ; then freqres=40 ; fi
+        if [[ -z $timeres ]] ; then timeres=4 ; fi
+    elif [[ $obsnum -ge 1151402936 ]] && [[ $obsnum -lt 1191580576 ]] ; then
+        telescope="MWAHEX"
+        basescale=2.0
+        if [[ -z $freqres ]] ; then freqres=40 ; fi
+        if [[ -z $timeres ]] ; then timeres=8 ; fi
+    elif [[ $obsnum -ge 1191580576 ]] ; then
+        telescope="MWALB"
+        basescale=0.5
+        if [[ -z $freqres ]] ; then freqres=40 ; fi
+        if [[ -z $timeres ]] ; then timeres=4 ; fi
+    fi
+done 
 
 
 script="${GXSCRIPT}/dugprep_${obslist}.sh"
 cat "${GXBASE}/templates/dugprep.tmpl" | sed -e "s:OBSLIST:${obslist}:g" \
                                  -e "s:BASEDIR:${base}:g" \
+                                 -e "s:ASVOFLAG:${asvo_flag}:g" \
+                                 -e "s:TRES:${timeres}:g" \
+                                 -e "s:FRES:${freqres}:g" \
                                  -e "s:BUCKET:${acacia}:g" > "${script}"
 
 chmod 755 "${script}"

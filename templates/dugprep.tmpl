@@ -3,6 +3,9 @@
 obslist=OBSLIST
 basedir=BASEDIR
 acacia=BUCKET
+asvo_flag=ASVOFLAG
+tres=TRES
+fres=FRES
 
 echo ${GXUSER}
 cd $basedir
@@ -15,10 +18,27 @@ module load rclone
 # module load singularity 
 
 # -----------------------------------------------------------------------------
-# DOWNLOAD FROM ACACIA 
+# DOWNLOAD FROM ACACIA
 # -----------------------------------------------------------------------------
+# NOTE: CURRENTLY ASSUMES JOBS ARE ALL READY TO GO, MAYBE ADD OPTION SOMEWHERE FOR SUBMITTING JOBS AND CHECKING ON THEM 
 
-rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
+if [[ -z ${asvo_flag} ]]
+then 
+    rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
+else
+    export params="output=ms,flag_edge_width=80,avg_time_res=${tres},avg_freq_res=${fres}"
+    # singularity run $GXCONTAINER giant-squid submit-conv --parameters=$params ${obslist}
+    export archive_suffix="_edg${flag_edge_width}_${avg_time_res}s_${avg_freq_res}kHz.${output}"
+    singularity run ${GXCONTAINER} giant-squid list -j --types conversion --states ready -- $obslist \
+        | tee /dev/stderr \
+        | jq -r '.[]|[.jobId,.files[0].fileUrl//"",.files[0].fileSize//"",.files[0].fileHash//""]|@tsv' \
+        | tee ready.tsv
+    cat ready.tsv | while read -r jobid url size hash; do
+        [ -f ${basedir}/${obsid}${archive_suffix}.tar ] && continue # TODO: maybe even check $hash matches?
+        echo "$(date -Is) downloading obsid=$obsid jobid=$jobid url=$url size=$size hash=$hash"
+        wget $url -O${basedir}/${obsid}${archive_suffix}.tar --progress=dot:giga --wait=60 --random-wait      
+    done
+fi 
 
 # -----------------------------------------------------------------------------
 # UNTAR OBSIDS AND MAKE NICE DIRECTORY STRUCTURE
@@ -27,10 +47,9 @@ rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
 echo "Successfully downloaded all tar files now unzipping and making directories" 
 
 # list=$(awk '{print substr($1,8,10)}' < "${obslist}_manta.tmp")
-list=()
-while IFS= read -r line; do list+=("$line"); done < ${obslist} 
+list=$(cat "${obslist}")
 n=1
-for obsnum in ${list[@]}
+for obsnum in $list
 do 
     cd $basedir 
     obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
@@ -54,7 +73,7 @@ echo "Downloaded obsids! Going to run flagging for each one now!"
 # RUN FLAGMWA (IF NEEDED) AND FLAGANTENNA 
 # -----------------------------------------------------------------------------
 
-for obsnum in ${list[@]}
+for obsnum in $list
 do
     cd ${basedir}/${obsnum}/
     flags=""
