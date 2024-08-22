@@ -29,7 +29,7 @@ echo "taskid: ${taskid}"
 function test_fail {
     if [[ $1 != 0 ]]
     then
-        track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+        singularity run $GXCONTAINER track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
         exit "$1"
     fi
 }
@@ -47,10 +47,19 @@ fi
 
 # Update database
 cd "${base}" || exit
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
+
+ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
+tempdir="${ramDiskBase}/${jobid}_${taskid}"
+mkdir -p "$tempdir"
+[[ -d $tempdir ]] || die "RAM disk creation unsuccessful: $tempdir"
+trap "rm -rf $tempdir" EXIT
+
+cp -rf ${obsnum}.ms ${tempdir}/
+
 
 # TODO: replace with find
 metafits="$(ls -t ${obsnum}*metafits* | head -1)"
@@ -78,7 +87,7 @@ fi
 
 
 # Set up channel-dependent options
-chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+chan="$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
 
 # Settings to support transient imaging / cleaning
 niter=12000
@@ -97,43 +106,47 @@ scale=$(echo "$basescale / $chan * 2" | bc -l)
 
 # Skipping first and last 8 seconds
 interval_start=$((8/timeres))
-nscans=$(pyhead.py -p NSCANS "${metafits}" | awk '{print $3}')
+nscans=$(singularity run $GXCONTAINER pyhead.py -p NSCANS "${metafits}" | awk '{print $3}')
 # native time resolution is 0.5 seconds
 ninterval=$(echo "$nscans*0.5/$timeres" | bc)
 interval_stop=$((ninterval-interval_start))
 intervals_out=$((interval_stop-interval_start))
 
+
+
 # Check whether the phase centre has already changed
-current=$(chgcentre "${obsnum}.ms")
+current=$(singularity run $GXCONTAINER chgcentre "${tempdir}/${obsnum}.ms")
 
 if [[ $current == *"shift"* ]]
 then
     echo "Detected that this measurement set has already had its phase centre changed. Not shifting."
 else
     # Determine whether to shift the pointing centre to be more optimally-centred on the peak of the primary beam sensitivity
-    coords=$(calc_pointing.py "${metafits}")
+    coords=$(singularity run $GXCONTAINER calc_pointing.py "${metafits}")
     echo "Optimally shifting co-ordinates of measurement set to $coords, with zenith shiftback."
-    chgcentre \
-    "${obsnum}.ms" \
+    singularity run $GXCONTAINER chgcentre \
+    "${tempdir}/${obsnum}.ms" \
     ${coords}
     
     # Now shift the pointing centre to point straight up, which approximates minw without making the phase centre rattle around
-    chgcentre \
+    singularity run $GXCONTAINER chgcentre \
     -zenith \
     -shiftback \
-    "${obsnum}.ms"
+    "${tempdir}/${obsnum}.ms"
 fi
 
 if [[ ! -e "${obsnum}_transient-t0020-image.fits" ]]
 then
-    wsclean -name "${obsnum}_transient" \
+    singularity run -B ${tempdir}/ $GXCONTAINER wsclean -name "${obsnum}_transient" \
     -abs-mem ${GXMEMORY} \
     -nwlayers ${GXNCPUS} \
+    -j ${SLURM_CPUS_PER_TASK} \
     -data-column ${datacolumn} \
     -subtract-model \
     -pol I \
     -size $size $size \
     -minuv-l ${minuv_l} \
+    -temp-dir ${tempdir} \
     -taper-inner-tukey ${taper_inner_tukey} \
     -taper-gaussian ${taper} \
     -niter $niter \
@@ -144,21 +157,21 @@ then
     -no-update-model-required \
     -interval $interval_start $interval_stop \
     -intervals-out $intervals_out \
-    "${obsnum}.ms"
+    "${tempdir}/${obsnum}.ms"
 fi
 
 if [[ ! -e "${obsnum}_transient-t0020-image_bkg.fits" ]]
 then 
     # Then you need to source-find the data... BANE would be expensive to run more than once, so just do it... once
-    BANE --compress --cores=1 "${obsnum}_transient-t0020-image.fits"
+    singularity run $GXCONTAINER BANE --compress --cores=1 "${obsnum}_transient-t0020-image.fits"
     test_fail $?
 fi 
 
 
 for file in "${obsnum}"_transient-t????-image.fits
 do
-    aegean \
-    --cores ${GXNCPUS}\
+    singularity run $GXCONTAINER aegean \
+    --cores ${SLURM_CPUS_PER_TASK}\
     --maxsummits=2 \
     --background="${obsnum}"_transient-t0020-image_bkg.fits \
     --noise="${obsnum}"_transient-t0020-image_rms.fits \
@@ -171,7 +184,7 @@ test_fail $?
 
 for file in "${obsnum}"_transient-t????-image_comp.fits
 do
-    stilts \
+    singularity run $GXCONTAINER stilts \
     tpipe \
     in="${file}" \
     cmd="addcol -before island file \\\"${file}\\\"" \
@@ -183,8 +196,8 @@ do
 done
 
 ls "${obsnum}"_transient-t????-image_comp_mod.fits > concat.list
-stilts tcat in=@concat.list out="${obsnum}_transient_concatenated_table.fits"
-stilts tmatch1 \
+singularity run $GXCONTAINER stilts tcat in=@concat.list out="${obsnum}_transient_concatenated_table.fits"
+singularity run $GXCONTAINER stilts tmatch1 \
 matcher="sky" \
 params=120 \
 action="identify" \
@@ -193,18 +206,22 @@ in="${obsnum}_transient_concatenated_table.fits" \
 out="${obsnum}_transient_matched_table.fits"
 
 # Make a cube and a standard deviation image
-make_time_cube.py ${obsnum}_transient
+singularity run $GXCONTAINER make_time_cube.py ${obsnum}_transient
 
 # Dump the image and model files into a hdf5 container
-make_imstack.py "${obsnum}_transient" 
+singularity run $GXCONTAINER make_imstack.py "${obsnum}_transient" 
 
 # Save the flags
-ms="${obsnum}.ms"
-taql "select ctod(TIME), gsum(ntrue(amplitude(DATA[,::3])==0.0)), gsum(ntrue(FLAG[,::3])), gmean(WEIGHT_SPECTRUM[,::3]) from $ms where ANTENNA1 != ANTENNA2 groupby TIME" > "${obsnum}_summary.txt"
+ms="${tempdir}/${obsnum}.ms"
+singularity run $GXCONTAINER taql "select ctod(TIME), gsum(ntrue(amplitude(DATA[,::3])==0.0)), gsum(ntrue(FLAG[,::3])), gmean(WEIGHT_SPECTRUM[,::3]) from $ms where ANTENNA1 != ANTENNA2 groupby TIME" > "${obsnum}_summary.txt"
 
 # Clean up
 rm "${obsnum}"_transient-t????-*.fits
 # rm "${obsnum}_transient_concatenated_table.fits"
 
-track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+rm -rf ${datadir}/${obsnum}/${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms "${datadir}/${obsnum}/"
+rm -rf ${tempdir}/
+
+
+singularity run $GXCONTAINER track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
 
