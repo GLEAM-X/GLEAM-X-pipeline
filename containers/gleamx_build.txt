@@ -503,7 +503,7 @@ cd /opt && \
     cd Birli && \
     git checkout v0.13.0 && \
     cargo make install_deps && \
-    cargo install --locked --features=aoflagger --path . 
+    RUSTFLAGS="-C target-cpu=${cpu_target}" cargo install --locked --features=aoflagger --path . 
 # ------------------------------------------------
 
 
