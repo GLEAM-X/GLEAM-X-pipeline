@@ -9,7 +9,7 @@ obslist=OBSLIST
 
 cd "${base}" || exit 1
 
-filter_badionosphere.py -v --refcat "${GXBASE}/models/NVSS_SUMSS_psfcal.fits" "${obslist}"
+singularity run $GXCONTAINER filter_badionosphere.py -v --refcat "${GXBASE}/models/NVSS_SUMSS_psfcal.fits" "${obslist}"
 
 good_obsidscheck=$(echo ${obslist} | cut -f1 -d".")
 
