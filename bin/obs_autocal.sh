@@ -134,7 +134,7 @@ else
 fi
 
 
-chmod 755 "${script}"
+chmod 777 "${script}"
 
 # sbatch submissions need to start with a shebang
 # echo '#!/bin/bash' > ${script}.sbatch

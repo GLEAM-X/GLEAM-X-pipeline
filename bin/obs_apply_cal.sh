@@ -115,7 +115,7 @@ cat "${GXBASE}/templates/apply_cal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                        -e "s:SELFCAL:${selfcal}:g" \
                                        -e "s:PIPEUSER:${pipeuser}:g"  > ${script}
 
-chmod 755 "${script}"
+chmod 777 "${script}"
 
 output="${GXLOG}/apply_cal_${obsnum}.o%A"
 error="${GXLOG}/apply_cal_${obsnum}.e%A"
