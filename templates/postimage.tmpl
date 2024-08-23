@@ -108,7 +108,7 @@ do
         fi
 
         # Generate a weight map for mosaicking
-        chans=($(singularity run ${GXCONTAINER} pyhead.py -p CHANNELS "${obsnum}.metafits" | awk '{print $3}' | sed "s/,/ /g" ))
+        chans=($(singularity run $GXCONTAINER pyhead.py -p CHANNELS "${obsnum}.metafits" | awk '{print $3}' | sed "s/,/ /g" ))
         if [[ ${subchan} == "MFS" ]]
         then
             i=0
@@ -120,26 +120,15 @@ do
         fi
         cstart=${chans[$i]}
         cend=${chans[$j]}
-        if [[ ! -e "${obsnum}_deep-${subchan}-image-pb-XX-beam.fits" ]]
-        then
-            if [[ ! -e "${obsnum}_${subchan}-XX-beam.fits" ]]
-            then 
-                singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
-                "_deep-${subchan}-image-pb_warp.fits" \
-                "${obsnum}_deep-${subchan}-image-pb-" \
-                -c "$cstart-$cend"
-            else 
-                ln -s "${PWD}/${obsnum}_${subchan}-XX-beam.fits" ${PWD}/${obsnum}_deep-${subchan}-image-pb-XX-beam.fits
-                ln -s "${PWD}/${obsnum}_${subchan}-YY-beam.fits" ${PWD}/${obsnum}_deep-${subchan}-image-pb-YY-beam.fits
-            fi 
-        fi 
+        singularity run $GXCONTAINER lookup_beam.py "${obsnum}" \
+        "_deep-${subchan}-image-pb.fits" \
+        "${obsnum}_deep-${subchan}-image-pb-" \
+        -c "$cstart-$cend"
 
-
-        singularity run ${GXCONTAINER} mask_image.py "${obsnum}_deep-${subchan}-image-pb.fits" \
+        singularity run $GXCONTAINER mask_image.py "${obsnum}_deep-${subchan}-image-pb.fits" \
         "${obsnum}_deep-${subchan}-image-pb-XX-beam.fits" \
         "${obsnum}_deep-${subchan}-image-pb-YY-beam.fits" \
         --apply-mask -v
-
         # move into place the new masked image
         # TODO: this will delete the -image-pb.fits but if mask didn't work you're just left with original and not -pb.fits: fix 
         rm "${obsnum}_deep-${subchan}-image-pb.fits" && mv "${obsnum}_deep-${subchan}-image-pb_mask.fits" "${obsnum}_deep-${subchan}-image-pb.fits"
@@ -273,7 +262,7 @@ do
         if [[ ! -e "${obsnum}_deep-${subchan}-image-pb_warp_weight.fits" ]]
         then
             # Generate a weight map for mosaicking
-            chans=($(singularity run ${GXCONTAINER}  pyhead.py -p CHANNELS "${obsnum}.metafits" | awk '{print $3}' | sed "s/,/ /g" ))
+            chans=($(singularity run $GXCONTAINER pyhead.py -p CHANNELS "${obsnum}.metafits" | awk '{print $3}' | sed "s/,/ /g" ))
             if [[ ${subchan} == "MFS" ]]
             then
                 i=0
@@ -285,22 +274,11 @@ do
             fi
             cstart=${chans[$i]}
             cend=${chans[$j]}
-            if [[ ! -e "${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits" ]]
-            then
-                if [[ ! -e "${obsnum}_${subchan}-XX-beam.fits" ]]
-                then 
-                    singularity run ${GXCONTAINER} lookup_beam.py "${obsnum}" \
-                    "_deep-${subchan}-image-pb_warp.fits" \
-                    "${obsnum}_deep-${subchan}-image-pb_warp-" \
-                    -c "$cstart-$cend"
-                else 
-                    ln -s ${PWD}/${obsnum}_${subchan}-XX-beam.fits ${PWD}/${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits 
-                    ln -s ${PWD}/${obsnum}_${subchan}-YY-beam.fits ${PWD}/${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits 
-                fi
-            fi 
-            
-            
-            singularity run ${GXCONTAINER} generate_weight_map.py "${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits" \
+            singularity run $GXCONTAINER lookup_beam.py "${obsnum}" \
+            "_deep-${subchan}-image-pb_warp.fits" \
+            "${obsnum}_deep-${subchan}-image-pb_warp-" \
+            -c "$cstart-$cend"
+            singularity run $GXCONTAINER generate_weight_map.py "${obsnum}_deep-${subchan}-image-pb_warp-XX-beam.fits" \
             "${obsnum}_deep-${subchan}-image-pb_warp-YY-beam.fits" \
             "${obsnum}_deep-${subchan}-image-pb_warp_rms.fits"
         fi
