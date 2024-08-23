@@ -161,7 +161,7 @@ fi
 # Create a template image that has all the same properties as our eventual WSClean image
 if [[ ! -e "${obsnum}_template.fits" ]]
 then
-    singularity run $GXCONTAINER wsclean \
+    singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINER wsclean \
             -abs-mem 60 \
             -temp-dir ${tempdir}/ \
             -parallel-gridding ${SLURM_CPUS_PER_TASK} \
@@ -177,7 +177,7 @@ then
             -channel-range 4 5 \
             -interval 4 5 \
             -nwlayers ${SLURM_CPUS_PER_TASK} \
-            "${tempdir}/${obsnum}.ms" 
+            "/input" 
 
     rm "${obsnum}_template-dirty.fits"
     mv "${obsnum}_template-image.fits" "${obsnum}_template.fits"
