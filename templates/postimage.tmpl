@@ -136,9 +136,11 @@ do
         singularity run ${GXCONTAINER} BANE --cores 1 --compress --noclobber "${obsnum}_deep-${subchan}-image-pb.fits"
         # TODO: Replace the redirection
 
+        rm "${obsnum}_deep-${subchan}_aegean.log"
+
         singularity run ${GXCONTAINER} aegean  --autoload --cores=${SLURM_CPUS_PER_TASK} --table="./${obsnum}_deep-${subchan}-image-pb.fits" "./${obsnum}_deep-${subchan}-image-pb.fits" > >(tee -a "${obsnum}_deep-${subchan}_aegean.log") 2> >(tee -a "${obsnum}_deep-${subchan}_aegean.log" >&2)
     fi
-    nsrc=$(grep "INFO found" "${obsnum}_deep-${subchan}_aegean.log" | head -1 | awk '{print $3}')
+    nsrc=$(grep "INFO found" "${obsnum}_deep-${subchan}_aegean.log" | tail -1 | awk '{print $3}')
     if [[ $nsrc -lt $minsrcs ]]
     then
         echo "Can't warp ${obsnum} -- only $nsrc sources and minimum required id $minsrcs -- probably a horrible image"
