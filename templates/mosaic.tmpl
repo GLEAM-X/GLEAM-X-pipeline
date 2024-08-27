@@ -16,7 +16,7 @@ obss=($(sort $obslist))
 
 # pos=$(obsid_ops.py "${obslist}" meanpos)
 # pos=$(calc_mean_pos.py ./*/*MFS*rescaled${filtered}.fits --filter-obsids "${obslist}")
-pos=$(calc_mean_pos.py --filter-obsids "${obslist}" --ra-field RA --dec-field DEC --refine-position ./*/*.metafits )
+pos=$(singularity run ${GXCONTAINER} calc_mean_pos.py --filter-obsids "${obslist}" --ra-field RA --dec-field DEC --refine-position ./*/*.metafits )
 
 if [ -z $ra ]
 then
@@ -59,7 +59,7 @@ echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
 echo "subchan: ${subchan}"
 
-track_task.py start_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --start_time="$(date +%s)"
+singularity run ${GXCONTAINER} track_task.py start_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --start_time="$(date +%s)"
 
 # Define output mosaic name as the first part of the input text file
 outname=$(echo ${obslist} | awk 'BEGIN {FS="_"} {print $1}')
@@ -107,8 +107,8 @@ done
 # Use an image that exists to get the frequency range
 if [[ ! -z $example ]]
 then
-    del=$(pyhead.py -p CDELT3 "${example}" | awk '{print $3/2}')
-    mid=$(pyhead.py -p CRVAL3 "${example}" | awk '{print $3}')
+    del=$(singularity run ${GXCONTAINER} pyhead.py -p CDELT3 "${example}" | awk '{print $3/2}')
+    mid=$(singularity run ${GXCONTAINER} pyhead.py -p CRVAL3 "${example}" | awk '{print $3}')
     low=$(echo "${mid}" "${del}" | awk '{printf "%03.0f",($1-$2)/1e6}')
     high=$(echo "${mid}" "${del}" | awk '{printf "%03.0fMHz",($1+$2)/1e6 }')
 else
@@ -167,7 +167,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
     mkdir "${resampdir}"
 
     echo "Generating resampled images for for ${obslist} subband $subchan."
-    swarp -c "${template}.resamp" @"${imagelist}.list"
+    singularity run -B ${resampdir} -B ${mosaicdir} -B ${base} ${GXCONTAINER} swarp -c "${template}.resamp" @"${imagelist}.list"
     # resampled images should now appear in ./resamp
 
     # remove the old lists for the pre-resampled images
@@ -189,7 +189,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
         (( n=$n+1 ))
         # create snapshot PSF on resampled image: 
         # psf_projected.py new_image old_image
-        psf_projected.py "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}.fits" "../${obsnum}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled.fits" &
+        singularity run -B ${resampdir} -B ${base} -B ${mosaicdir} ${GXCONTAINER} psf_projected.py "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}.fits" "../${obsnum}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled.fits" &
         echo "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}_bmaj.fits" >> "${tmp_bmaj}"
         echo "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}_bmin.fits" >> "${tmp_bmin}"
         echo "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}_bpa.fits" >> "${tmp_bpa}"
@@ -218,15 +218,15 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
 
         # we will rename the coadd.fits / coadd.weight.fits afterwards
         echo "Generating mosaic ${outname}${image}.fits for ${obslist} subband $subchan."
-        swarp -c "${template}${image}.coadd" @"${imagelist}.list.resamp${image}"
+        singularity run -B ${resampdir} -B ${mosaicdir} -B ${base} ${GXCONTAINER} swarp -c "${template}${image}.coadd" @"${imagelist}.list.resamp${image}"
 
         if [[ -e "${imageout}${image}.fits" ]]
         then
             # will this ever trim something in one image but not in another? 
-            fits_trim.py "${imageout}${image}.fits" "${outname}${image}.fits"
+            singularity run -B ${resampdir} -B ${mosaicdir} -B ${base} ${GXCONTAINER} fits_trim.py "${imageout}${image}.fits" "${outname}${image}.fits"
             if [[ -e ${outname}${image}.fits ]]
             then
-                pyhead.py -u FREQ "${mid}" "${outname}${image}.fits"
+                singularity run -B ${resampdir} -B ${mosaicdir} -B ${base} ${GXCONTAINER} pyhead.py -u FREQ "${mid}" "${outname}${image}.fits"
                 rm "${imageout}${image}.fits"
             else
                 echo "Could not generate mosaic ${outname}${image} for ${obslist} subband ${subchan}"
@@ -239,7 +239,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
     done
 
     # make PSF map and remove BMAJ, BMIN, BPA maps
-    psf_combine_axes.py "${outname}_bmaj.fits" \
+    singularity run -B ${resampdir} -B ${mosaicdir} -B ${base} ${GXCONTAINER} psf_combine_axes.py "${outname}_bmaj.fits" \
         "${outname}_bmin.fits" \
         "${outname}_bpa.fits" \
         -o "${outname}_psfmap.fits" \
@@ -255,38 +255,38 @@ fi
 
 # Blur correction and final PSF generation
 if [[ ! -e "${outname}_ddmod.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
-    BANE --noclobber --cores 1 "${outname}.fits"
+    singularity run ${GXCONTAINER} BANE --noclobber --cores 1 "${outname}.fits"
 
     # To create the final PSF map that I will use later, run source-finding without any PSF input
     if [[ ! -e "${outname}_comp.fits" ]]
     then
-        aegean --progress --cores=${GXNCPUS} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
+        singularity run ${GXCONTAINER} aegean --progress --cores=${SLURM_CPUS_PER_TASK} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
     fi
 
     # Generate a measured PSF map
     if [[ ! -e "${outname}_psf.fits" ]]
     then
-        psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
-        psf_create.py --input="${outname}_comp_psfcat.fits"
+        singularity run ${GXCONTAINER} psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
+        singularity run ${GXCONTAINER} psf_create.py --input="${outname}_comp_psfcat.fits"
     fi
 
     # Run source-finding using the mosaicked PSF map as an input
     if [[ ! -e "${outname}_projpsf_comp.fits" ]]
     then
-        aegean --progress --cores=${GXNCPUS} --seedclip=10 --maxsummits=5 --autoload --table="${outname}_projpsf.fits" --psf="${outname}_psfmap.fits" "${outname}.fits"
+        singularity run ${GXCONTAINER} aegean --progress --cores=${SLURM_CPUS_PER_TASK} --seedclip=10 --maxsummits=5 --autoload --table="${outname}_projpsf.fits" --psf="${outname}_psfmap.fits" "${outname}.fits"
     fi
 
     # Select sources and generate a new PSF map that has the right blur factor
     if [[ ! -e "${outname}_projpsf_psf.fits" ]]
     then
-        psf_select.py --input="${outname}_projpsf_comp.fits" --prefix "${low}-${high}"
-        psf_create.py --input="${outname}_projpsf_comp_psfcat.fits"
+        singularity run ${GXCONTAINER} psf_select.py --input="${outname}_projpsf_comp.fits" --prefix "${low}-${high}"
+        singularity run ${GXCONTAINER} psf_create.py --input="${outname}_projpsf_comp_psfcat.fits"
     fi
 
     # Multiply by blur factor
     if [[ ! -e "${outname}_ddmod.fits" ]]
     then
-        dd_flux_mod.py "${outname}.fits" "${outname}_projpsf_psf.fits" "${outname}_ddmod.fits"
+        singularity run ${GXCONTAINER} dd_flux_mod.py "${outname}.fits" "${outname}_projpsf_psf.fits" "${outname}_ddmod.fits"
     fi
 
     # TODO: clean up intermediate files
@@ -297,8 +297,8 @@ fi
 # Rerun source-finding on blur-corrected map with measured PSF map
 if [[ ! -e "${outname}_ddmod_comp.fits" ]]
 then
-    BANE --cores 1 --noclobber "${outname}_ddmod.fits"
-    aegean --progress --cores=${GXNCPUS} --seedclip=4 --maxsummits=5 --autoload --table="${outname}_ddmod.fits" --psf="${outname}_psf.fits" "${outname}_ddmod.fits"
+    singularity run ${GXCONTAINER} BANE --cores 1 --noclobber "${outname}_ddmod.fits"
+    singularity run ${GXCONTAINER} aegean --progress --cores=${SLURM_CPUS_PER_TASK} --seedclip=4 --maxsummits=5 --autoload --table="${outname}_ddmod.fits" --psf="${outname}_psf.fits" "${outname}_ddmod.fits"
 fi
 
 # Record whether mosaicking was successful
@@ -321,9 +321,9 @@ fi
 if [[ -e ${outname}_ddmod.fits ]]
 then
     echo "Mosaic successful!"
-    track_task.py finish_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
+    singularity run ${GXCONTAINER} track_task.py finish_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
 else
     echo "Mosaic failed!"
-    track_task.py fail_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
+    singularity run ${GXCONTAINER} track_task.py fail_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
     exit 1
 fi

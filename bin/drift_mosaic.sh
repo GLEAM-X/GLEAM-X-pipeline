@@ -69,7 +69,7 @@ fi
 
 if [[ ! -z ${GXACCOUNT} ]]
 then
-    account="--account=${GXACCOUNT}"
+    account="--partition=${GXACCOUNT}"
 fi
 
 queue="-p ${GXSTANDARDQ}"
@@ -93,13 +93,13 @@ error="${GXLOG}/mosaic_${listbase}.e%A_%a"
 
 chmod 755 "${script}"
 
-# sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > "${script}.sbatch"
-echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
+# # sbatch submissions need to start with a shebang
+# echo '#!/bin/bash' > "${script}.sbatch"
+# echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
 # Automatically runs a job array for each sub-band
-sub="sbatch  --begin=now+5minutes --array=0-4  --export=ALL  --time=24:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${depend} ${queue} ${script}.sbatch"
+sub="sbatch  --begin=now+5minutes --array=0-4  --export=ALL  --time=12:00:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
+sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
