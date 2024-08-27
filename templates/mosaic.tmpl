@@ -167,7 +167,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
     mkdir "${resampdir}"
 
     echo "Generating resampled images for for ${obslist} subband $subchan."
-    singularity run -B ${mosaicdir} -B ${base} ${GXCONTAINER} swarp -c "${template}.resamp" @"${imagelist}.list"
+    singularity run -B ${base} ${GXCONTAINER} swarp -c "${template}.resamp" @"${imagelist}.list"
     # resampled images should now appear in ./resamp
 
     # remove the old lists for the pre-resampled images
@@ -189,7 +189,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
         (( n=$n+1 ))
         # create snapshot PSF on resampled image: 
         # psf_projected.py new_image old_image
-        singularity run  -B ${base} -B ${mosaicdir} ${GXCONTAINER} psf_projected.py "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}.fits" "../${obsnum}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled.fits" &
+        singularity run  -B ${base} ${GXCONTAINER} psf_projected.py "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}.fits" "../${obsnum}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled.fits" &
         echo "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}_bmaj.fits" >> "${tmp_bmaj}"
         echo "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}_bmin.fits" >> "${tmp_bmin}"
         echo "${resampdir}/${obsnum}_deep-${subchan}-image-pb_warp_rescaled${filtered}_bpa.fits" >> "${tmp_bpa}"
@@ -218,15 +218,15 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
 
         # we will rename the coadd.fits / coadd.weight.fits afterwards
         echo "Generating mosaic ${outname}${image}.fits for ${obslist} subband $subchan."
-        singularity run  -B ${mosaicdir} -B ${base} ${GXCONTAINER} swarp -c "${template}${image}.coadd" @"${imagelist}.list.resamp${image}"
+        singularity run -B ${base} ${GXCONTAINER} swarp -c "${template}${image}.coadd" @"${imagelist}.list.resamp${image}"
 
         if [[ -e "${imageout}${image}.fits" ]]
         then
             # will this ever trim something in one image but not in another? 
-            singularity run  -B ${mosaicdir} -B ${base} ${GXCONTAINER} fits_trim.py "${imageout}${image}.fits" "${outname}${image}.fits"
+            singularity run -B ${base} ${GXCONTAINER} fits_trim.py "${imageout}${image}.fits" "${outname}${image}.fits"
             if [[ -e ${outname}${image}.fits ]]
             then
-                singularity run  -B ${mosaicdir} -B ${base} ${GXCONTAINER} pyhead.py -u FREQ "${mid}" "${outname}${image}.fits"
+                singularity run -B ${base} ${GXCONTAINER} pyhead.py -u FREQ "${mid}" "${outname}${image}.fits"
                 rm "${imageout}${image}.fits"
             else
                 echo "Could not generate mosaic ${outname}${image} for ${obslist} subband ${subchan}"
@@ -239,7 +239,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
     done
 
     # make PSF map and remove BMAJ, BMIN, BPA maps
-    singularity run  -B ${mosaicdir} -B ${base} ${GXCONTAINER} psf_combine_axes.py "${outname}_bmaj.fits" \
+    singularity run -B ${base} ${GXCONTAINER} psf_combine_axes.py "${outname}_bmaj.fits" \
         "${outname}_bmin.fits" \
         "${outname}_bpa.fits" \
         -o "${outname}_psfmap.fits" \
