@@ -12,18 +12,18 @@ then
     numfiles=$(wc -l "${obslist}" | awk '{print $1}')
     echo "${numfiles} obsids to transfer"
 
-    jobid=${SLURM_JOB_ID}
+    # jobid=${SLURM_JOB_ID}
 else
     echo "ERROR: Expected obsnum to be a file, recieved ${obslist}"    
-    exit 1
+    exit 0
 fi
 
-echo "jobid: ${jobid}"
+# echo "jobid: ${jobid}"
 
 function test_fail {
 if [[ $1 != 0 ]]
 then
-    track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+    singularity run ${GXCONTAINER} track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
     exit "$1"
 fi
 }
@@ -104,9 +104,9 @@ do
         fi       
 
         echo 'Updating database'
-        track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+        singularity run ${GXCONTAINER} track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
 
-        track_task.py obs_status --obs_id="${obsnum}" --status='archived'
+        singularity run ${GXCONTAINER} track_task.py obs_status --obs_id="${obsnum}" --status='archived'
         echo "Database updated. Obsid $obsnum has been archived. "
 
     else
