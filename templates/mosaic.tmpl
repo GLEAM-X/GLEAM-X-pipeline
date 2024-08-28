@@ -295,11 +295,11 @@ else
 fi
 
 # Rerun source-finding on blur-corrected map with measured PSF map
-if [[ ! -e "${outname}_ddmod_comp.fits" ]]
-then
-    singularity run ${GXCONTAINER} BANE --cores 1 --noclobber "${outname}_ddmod.fits"
-    singularity run ${GXCONTAINER} aegean --progress --cores=${SLURM_CPUS_PER_TASK} --seedclip=4 --maxsummits=5 --autoload --table="${outname}_ddmod.fits" --psf="${outname}_psf.fits" "${outname}_ddmod.fits"
-fi
+# if [[ ! -e "${outname}_ddmod_comp.fits" ]]
+# then
+#     singularity run ${GXCONTAINER} BANE --cores 1 --noclobber "${outname}_ddmod.fits"
+#     singularity run ${GXCONTAINER} aegean --progress --cores=${SLURM_CPUS_PER_TASK} --seedclip=4 --maxsummits=5 --autoload --table="${outname}_ddmod.fits" --psf="${outname}_psf.fits" "${outname}_ddmod.fits"
+# fi
 
 # Record whether mosaicking was successful
 #n=0
