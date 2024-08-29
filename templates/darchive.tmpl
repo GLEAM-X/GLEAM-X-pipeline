@@ -4,7 +4,7 @@ set -x
 
 pipeuser=PIPEUSER
 obsnum=OBSNUM
-
+mosaicnm=MOSAICNM
 # If obsnum is a file, then we are in an array job
 if [[ -f ${obsnum} ]]
 then
@@ -34,6 +34,13 @@ fi
 singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 base=BASEDIR
+
+
+if [[ -d "${base}/mosaic" ]]
+then 
+    cd "${base}/mosaic" 
+    tar -czfv "./${mosaicnm}.tar.gz" *
+fi 
 
 datadir="${base}/${obsnum}"
 cd "${datadir}" ||  exit 1
