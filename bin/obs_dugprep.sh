@@ -62,11 +62,11 @@ base="${GXSCRATCH}/$project"
 cd "${base}" 
 # code="${GXBASE}"
 
-if [[ -f "${obsnum}" ]]
+if [[ -f "${obslist}" ]]
 then 
     list=$(cat "${obslist}")
 else
-    list=(${obsnum})
+    list=(${obslist})
 fi 
 
 
