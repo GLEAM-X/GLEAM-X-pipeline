@@ -11,7 +11,7 @@ obsnum=OBSNUM
 ao_calibrate=OFFRINGA
 
 echo $SLURM_MEM_PER_NODE
-
+echo $GXCONTAINER 
 
 # If obsnum is a file, then we are in an array job
 if [[ -f "${obsnum}" ]]

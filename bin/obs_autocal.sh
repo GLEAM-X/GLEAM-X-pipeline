@@ -9,6 +9,7 @@ echo "obs_autocal.sh [-d dep] [-a account] [-t] obsnum
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
   -a         : Flag to use aocalibrate instead of hyperdrive? 
+  -n         : Node type for dug (default=GXNODETYPE)
   -f FRAC    : the acceptable fraction of spectrum that may be flagged in a calibration
                solution file before it is marked as bad. Value between 0 - 1. (default = 0.25)
   -s SFRAC   : the acceptable fraction of a segmented spectrum that may be flagged in a 
@@ -28,8 +29,9 @@ ion=1
 frac=0.25
 sthresh=0.4
 ao_calibrate=
+nodetype=
 # parse args and set options
-while getopts ':tiad:p:f:s:' OPTION
+while getopts ':tiand:p:f:s:' OPTION
 do
     case "$OPTION" in
 	d)
@@ -41,6 +43,9 @@ do
 	p)
 	    project=${OPTARG}
 	    ;;
+    n)
+        nodetype=1
+        ;;
 	i)
 	    ion=
 	    ;;
@@ -86,7 +91,25 @@ else
     jobarray=''
 fi
 
-queue="-p ${GXSTANDARDQ}"
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
+
 datadir="${GXSCRATCH}/$project"
 
 # set dependency
@@ -128,7 +151,11 @@ elif [[ ${GXCOMPUTER} == "setonix" ]]
 then 
     CPUSPERTASK=8
     MEMPERTASK=15
-else
+elif [[ ${GXCOMPUTER} == "dug" ]]
+then
+    CPUSPERTASK=5
+    MEMBERTASK=32
+else 
     CPUSPERTASK=${GXNCPUS}
     MEMPERTASK=${GXABSMEMORY}
 fi
@@ -140,8 +167,8 @@ chmod 777 "${script}"
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "srun --cpus-per-task=${CPUSPERTASK} --ntasks=1 --ntasks-per-node=1  singularity run ${GXCONTAINER} ${script}" >> ${script}
 
-sub="sbatch --begin=now+5minutes --export=ALL --cpus-per-task=${CPUSPERTASK}  --mem=${MEMPERTASK}G --partition=${GXSTANDARDQ} ${GXTASKLINE} --output=${output} --error=${error}"
-sub="${sub} ${jobarray} ${depend} ${script}"
+sub="sbatch --begin=now+1minutes --export=ALL --cpus-per-task=${CPUSPERTASK}  --mem=${MEMPERTASK}G --output=${output} --error=${error}"
+sub="${sub} ${jobarray} ${depend} ${partition} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
