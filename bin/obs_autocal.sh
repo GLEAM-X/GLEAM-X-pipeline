@@ -154,7 +154,7 @@ then
 elif [[ ${GXCOMPUTER} == "dug" ]]
 then
     CPUSPERTASK=5
-    MEMBERTASK=32
+    MEMPERTASK=32
 else 
     CPUSPERTASK=${GXNCPUS}
     MEMPERTASK=${GXABSMEMORY}
