@@ -129,6 +129,7 @@ cat "${GXBASE}/templates/autocal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                      -e "s:DATADIR:${datadir}:g" \
                                      -e "s:IONOTEST:${ion}:g" \
                                      -e "s:PIPEUSER:${pipeuser}:g" \
+                                     -e "s:NODETYPE:${nodetype}:g" \
                                      -e "s:OFFRINGA:${ao_calibrate}:g" \
                                      -e "s:FRACTION:${frac}:g" \
                                      -e "s:STHRESH:${sthresh}:g" > "${script}"

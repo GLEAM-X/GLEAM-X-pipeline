@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 #SBATCH --time=02:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -9,9 +9,18 @@ set -x
 pipeuser=PIPEUSER
 obsnum=OBSNUM
 ao_calibrate=OFFRINGA
+node=NODETYPE
 
 echo $SLURM_MEM_PER_NODE
 echo $GXCONTAINER 
+
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default GXCONTAINER"
+fi 
 
 # If obsnum is a file, then we are in an array job
 if [[ -f "${obsnum}" ]]
