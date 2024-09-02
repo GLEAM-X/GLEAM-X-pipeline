@@ -31,7 +31,7 @@ sthresh=0.4
 ao_calibrate=
 nodetype=
 # parse args and set options
-while getopts ':tiand:p:f:s:' OPTION
+while getopts ':tia:n:d:p:f:s:' OPTION
 do
     case "$OPTION" in
 	d)
