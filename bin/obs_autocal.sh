@@ -95,7 +95,7 @@ if [[ ! -z ${nodetype} ]]
 then 
     if [[ ${GXCOMPUTER} == "dug" ]]
     then
-        partition="--constraint=${nodetype}"
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
         export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
         echo ${GXCONTAINER}
     else 
@@ -104,7 +104,7 @@ then
 else
     if [[ ${GXCOMPUTER} == "dug" ]]
     then
-        partition="--constraint=${GXNODETYPE}"
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
     else 
         partition="--partition=${GXSTANDARDQ}"
     fi 
