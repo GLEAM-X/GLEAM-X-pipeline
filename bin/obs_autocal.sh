@@ -44,7 +44,7 @@ do
 	    project=${OPTARG}
 	    ;;
     n)
-        nodetype=1
+        nodetype=${OPTARG}
         ;;
 	i)
 	    ion=
