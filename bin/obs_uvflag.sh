@@ -119,13 +119,13 @@ fi
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "srun --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
-if [ ! -z ${GXNCPULINE} ]
-then
+# if [ ! -z ${GXNCPULINE} ]
+# then
     # autoflag only needs a single CPU core
-    GXNCPULINE="--ntasks-per-node=1"
-fi
+GXNCPULINE="--ntasks-per-node=1"
+# fi
 
-sub="sbatch --begin=now+5minutes --export=ALL --time=01:00:00 --mem=5G --cpus-per-task=1 --output=${output} --error=${error}"
+sub="sbatch --begin=now+1minutes --export=ALL --time=01:00:00 --mem=5G --cpus-per-task=1 --output=${output} --error=${error}"
 sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}"
 
 if [[ ! -z ${tst} ]]
