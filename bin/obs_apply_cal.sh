@@ -130,13 +130,13 @@ fi
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
-if [ ! -z ${GXNCPULINE} ]
-then
+# if [ ! -z ${GXNCPULINE} ]
+# then
     # autoflag only needs a single CPU core
-    GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=1"
-fi
+GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=1"
+# fi
 
-sub="sbatch --begin=now+5minutes  --export=ALL --time=01:00:00 --mem=5G  --output=${output} --error=${error} "
+sub="sbatch --begin=now+1minutes  --export=ALL --time=01:00:00 --mem=5G  --output=${output} --error=${error} "
 sub="${sub} ${queue} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${script}"
 
 if [[ ! -z ${tst} ]]
