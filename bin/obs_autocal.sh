@@ -2,14 +2,14 @@
 
 usage()
 {
-echo "obs_autocal.sh [-d dep] [-a account] [-t] obsnum
+echo "obs_autocal.sh [-d dep] [-a] [-n nodetype] [-t] obsnum
   -p project : project, no default
   -d dep     : job number for dependency (afterok)
   -i         : disable the ionospheric metric tests (default = False)
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
   -a         : Flag to use aocalibrate instead of hyperdrive? 
-  -n         : Node type for dug (default=GXNODETYPE)
+  -n node    : Node type for dug (default=GXNODETYPE)
   -f FRAC    : the acceptable fraction of spectrum that may be flagged in a calibration
                solution file before it is marked as bad. Value between 0 - 1. (default = 0.25)
   -s SFRAC   : the acceptable fraction of a segmented spectrum that may be flagged in a 
@@ -37,9 +37,6 @@ do
 	d)
 	    dep=${OPTARG}
 	    ;;
-    a)
-        account=${OPTARG}
-        ;;
 	p)
 	    project=${OPTARG}
 	    ;;
