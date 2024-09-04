@@ -2,11 +2,12 @@
 
 usage()
 {
-echo "obs_image.sh [-d dep] [-p project] [-a account] [-z] [-t] obsnum
+echo "obs_image.sh [-d dep] [-p project] [-n nodetype] [-z] [-t] obsnum
   -d dep     : job number for dependency (afterok)
   -p project : project, (must be specified, no default)
   -z         : Debugging mode: image the CORRECTED_DATA column
                 instead of imaging the DATA column
+  -n node    : Node type for dug (default=GXNODETYPE)
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
   obsnum     : the obsid to process, or a text file of obsids (newline separated). 
@@ -20,18 +21,19 @@ pipeuser="${GXUSER}"
 dep=
 tst=
 debug=
+nodetype=
 # parse args and set options
-while getopts ':tzd:a:p:' OPTION
+while getopts ':tzd:p:n:' OPTION
 do
     case "$OPTION" in
 	d)
 	    dep=${OPTARG}
 	    ;;
-    a)
-        account=${OPTARG}
-        ;;
     p)
         project=${OPTARG}
+        ;;
+    n)
+        nodetype=${OPTARG}
         ;;
     z)
         debug=1
@@ -84,12 +86,33 @@ else
     jobarray=''
 fi
 
+
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
+
 # start the real program
 
 script="${GXSCRIPT}/image_${obsnum}.sh"
 cat "${GXBASE}/templates/image.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                  -e "s:BASEDIR:${base}:g" \
                                  -e "s:DEBUG:${debug}:g" \
+                                 -e "s:NODETYPE:${nodetype}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
 output="${GXLOG}/image_${obsnum}.o%A"
@@ -101,14 +124,25 @@ then
    error="${error}_%a"
 fi
 
+
+if [[ ${GXCOMPUTER} == "dug" ]]
+then
+    CPUSPERTASK=10
+    MEMPERTASK=80
+else 
+    CPUSPERTASK=${GXNCPUS}
+    MEMPERTASK=${GXABSMEMORY}
+fi
+
+
 chmod 777 "${script}"
 
 # sbatch submissions need to start with a shebang
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
-sub="sbatch --begin=now+5minutes --export=ALL  --time=12:00:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}"
+sub="sbatch --begin=now+1minutes --export=ALL  --time=03:00:00 --mem=${MEMPERTASK}G --cpus-per-task=${CPUSPERTASK} --output=${output} --error=${error}"
+sub="${sub} ${partition} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
