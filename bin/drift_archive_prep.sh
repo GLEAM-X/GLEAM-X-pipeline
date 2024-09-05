@@ -104,7 +104,7 @@ chmod 755 "${script}"
 GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=1"
 # fi
 
-sub="sbatch --begin=now+5minutes --export=ALL --time=01:00:00 --mem=10G --output=${output} --error=${error} "
+sub="sbatch --begin=now+1minutes --export=ALL --time=01:00:00 --mem=10G --output=${output} --error=${error} "
 sub="${sub}  ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}"
 
 if [[ ! -z ${tst} ]]
