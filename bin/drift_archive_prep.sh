@@ -98,11 +98,11 @@ chmod 755 "${script}"
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "srun --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
-if [ ! -z ${GXNCPULINE} ]
-then
+# if [ ! -z ${GXNCPULINE} ]
+# then
     # archive only needs a single CPU core
-    GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=1"
-fi
+GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=1"
+# fi
 
 sub="sbatch --begin=now+5minutes --export=ALL --time=01:00:00 --mem=10G --output=${output} --error=${error} "
 sub="${sub}  ${GXNCPULINE} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}"
