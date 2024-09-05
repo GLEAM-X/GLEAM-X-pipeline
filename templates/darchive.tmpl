@@ -35,13 +35,6 @@ singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="
 
 base=BASEDIR
 
-
-if [[ -d "${base}/mosaic" ]]
-then 
-    cd "${base}/mosaic" 
-    tar -czfv "./${mosaicnm}.tar.gz" *
-fi 
-
 datadir="${base}/${obsnum}"
 cd "${datadir}" ||  exit 1
 

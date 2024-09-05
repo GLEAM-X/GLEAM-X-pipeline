@@ -12,7 +12,6 @@ A SLURM job-array will be used to prepare separate obsids in parallel.
   -p project  : project, (must be specified, no default)
   -t          : test. Don't submit job, just make the batch file
                 and then return the submission command
-  -m mosaicnm : Name to use for the tar of the mosaic folder (assumes $GXSCRATCH/<project>/mosaic/ and tars all the files in that directory using input name for formatting)
   -o obsnum      : A text file of obsids (newline separated). 
                A job-array task will be submitted to process the collection of obsids. " 1>&2;
 exit 1;
@@ -25,15 +24,12 @@ dep=
 tst=
 
 # parse args and set options
-while getopts ':td:m:p:o:' OPTION
+while getopts ':td:p:o:' OPTION
 do
     case "$OPTION" in
 	d)
 	    dep=${OPTARG}
 	    ;;
-    m)
-        mosaic=${OPTARG}
-        ;;
     p)
         project=${OPTARG}
         ;;
@@ -84,7 +80,6 @@ jobarray="--array=1-${numfiles}"
 script="${GXSCRIPT}/darchive_${obslist}.sh"
 cat "${GXBASE}/templates/darchive.tmpl" | sed -e "s:OBSNUM:${obslist}:g" \
                                  -e "s:BASEDIR:${base}:g" \
-                                 -e "s:MOSAICNM:${mosaic}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g"  > "${script}"
 
 
