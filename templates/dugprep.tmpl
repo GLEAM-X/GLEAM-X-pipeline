@@ -31,9 +31,9 @@ else
     export archive_suffix="_edg${flag_edge_width}_${avg_time_res}s_${avg_freq_res}kHz.${output}"
     singularity run ${GXCONTAINER} giant-squid list -j --types conversion --states ready -- $obslist \
         | tee /dev/stderr \
-        | jq -r '.[]|[.jobId,.files[0].fileUrl//"",.files[0].fileSize//"",.files[0].fileHash//""]|@tsv' \
+        | jq -r '.[]|[.jobId,.obsid,.files[0].fileUrl//"",.files[0].fileSize//"",.files[0].fileHash//""]|@tsv' \
         | tee ready.tsv
-    cat ready.tsv | while read -r jobid url size hash; do
+    cat ready.tsv | while read -r jobid obsid url size hash; do
         [ -f ${basedir}/${obsid}${archive_suffix}.tar ] && continue # TODO: maybe even check $hash matches?
         echo "$(date -Is) downloading obsid=$obsid jobid=$jobid url=$url size=$size hash=$hash"
         wget $url -O${basedir}/${obsid}${archive_suffix}.tar --progress=dot:giga --wait=60 --random-wait      
