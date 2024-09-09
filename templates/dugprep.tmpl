@@ -48,11 +48,16 @@ echo "Successfully downloaded all tar files now unzipping and making directories
 
 # list=$(awk '{print substr($1,8,10)}' < "${obslist}_manta.tmp")
 list=$(cat "${obslist}")
-n=1
 for obsnum in $list
 do 
     cd $basedir 
-    obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
+    if [[ -z $asvo_flag ]]
+    then 
+        obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar"
+    else 
+        obsfile=$(echo "${obsnum}.tar")
+    fi 
+    
     if [[ ! -d "${obsnum}" ]]
     then
         mkdir "${obsnum}"
