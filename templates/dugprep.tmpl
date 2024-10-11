@@ -44,17 +44,17 @@ else
             if [[ -e $obsfile ]]
             then 
                 echo "already have tar for $obs not downloading again!" 
-                sed -i "/$obs/d" ready_for_download.txt
+                sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
             elif [[ -d "$obs.ms" ]]
             then 
                 echo "There's already a ms here! Not downloading for $obs" 
-                sed -i "/$obs/d" ready_for_download.txt
+                sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
             fi
         else 
             if [[ -e $obsfile ]]
             then 
                 echo "already have tar for $obs not downloading again!" 
-                sed -i "/$obs/d" ready_for_download.txt
+                sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
             fi 
         fi
     done 
