@@ -26,14 +26,44 @@ if [[ -z ${asvo_flag} ]]
 then 
     rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
 else
-    export params="output=ms,flag_edge_width=80,avg_time_res=${tres},avg_freq_res=${fres}"
     # IF YOU NEED TO ACTUALLY SUBMIT THE JOBS UNCOMMENT! 
+    # export params="output=ms,flag_edge_width=80,avg_time_res=${tres},avg_freq_res=${fres}"
     # singularity run $GXCONTAINER giant-squid submit-conv --parameters=$params ${obslist}
-    export archive_suffix="_edg${flag_edge_width}_${avg_time_res}s_${avg_freq_res}kHz.${output}"
+    
+    # get list of ready ones: 
+    singularity run ${GXCONTAINER} giant-squid list --states ready ${obslist} | cut -d "|" -f 3 | tail -n +4  | head -n -1 > ready_for_download.txt
+    list=()
+    list=$(cat "ready_for_download.txt")
+    for obs in $list
+    do
+        cd $basedir
+        obsfile=$(echo "${obsnum}_"[0-9]*".tar")
+        if [[ -d $obs ]]
+        then 
+            cd $obs
+            if [[ -e $obsfile ]]
+            then 
+                echo "already have tar for $obs not downloading again!" 
+                sed -i "/$obs/d" ready_for_download.txt
+            elif [[ -d "$obs.ms" ]]
+            then 
+                echo "There's already a ms here! Not downloading for $obs" 
+                sed -i "/$obs/d" ready_for_download.txt
+            fi
+        else 
+            if [[ -e $obsfile ]]
+            then 
+                echo "already have tar for $obs not downloading again!" 
+                sed -i "/$obs/d" ready_for_download.txt
+            fi 
+        fi
+    done 
 
-    # Download just the tar file and untar inside directory below 
-    singularity run ${GXCONTAINER} giant-squid -k ${obslist}
+    cd $basedir 
 
+    # Download just the tar file and untar inside directory below
+    singularity run ${GXCONTAINER} giant-squid download -k ready_for_download.txt 
+   
     done
 fi 
 
@@ -42,18 +72,15 @@ fi
 # -----------------------------------------------------------------------------
 
 echo "Successfully downloaded all tar files now unzipping and making directories" 
-
+list=()
 # list=$(awk '{print substr($1,8,10)}' < "${obslist}_manta.tmp")
-list=$(cat "${obslist}")
+list=$(cat ready_for_download.txt)
 for obsnum in $list
 do 
     cd $basedir 
-    # if [[ -z $asvo_flag ]]
-    # then 
+
     obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
-    # else 
-    #     obsfile=$(echo "${obsnum}.tar")
-    # fi 
+
 
     if [[ ! -d "${obsnum}" ]]
     then
@@ -61,12 +88,18 @@ do
     fi
 
     cd $obsnum
-    mv "../${obsfile}" ./ 
-    tar xf "${obsfile}" 
-    if [[ $? ]]
+    if [[ -d "${obsnum}.ms" ]]
     then
-        rm "${obsfile}"
-    fi
+        echo "${obsnum}.ms already exists; please remove directory before running untar job."
+    else
+        mv "../${obsfile}" ./ 
+        tar xf "${obsfile}"
+        if [[ $? ]]
+        then
+            rm "${obsfile}"
+        fi
+    fi 
+
 done 
 
 echo "Downloaded obsids! Going to run flagging for each one now!" 
