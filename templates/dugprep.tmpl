@@ -27,16 +27,13 @@ then
     rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
 else
     export params="output=ms,flag_edge_width=80,avg_time_res=${tres},avg_freq_res=${fres}"
+    # IF YOU NEED TO ACTUALLY SUBMIT THE JOBS UNCOMMENT! 
     # singularity run $GXCONTAINER giant-squid submit-conv --parameters=$params ${obslist}
     export archive_suffix="_edg${flag_edge_width}_${avg_time_res}s_${avg_freq_res}kHz.${output}"
-    singularity run ${GXCONTAINER} giant-squid list -j --types conversion --states ready -- $obslist \
-        | tee /dev/stderr \
-        | jq -r '.[]|[.jobId,.obsid,.files[0].fileUrl//"",.files[0].fileSize//"",.files[0].fileHash//""]|@tsv' \
-        | tee ready.tsv
-    cat ready.tsv | while read -r jobid obsid url size hash; do
-        [ -f ${basedir}/${obsid}${archive_suffix}.tar ] && continue # TODO: maybe even check $hash matches?
-        echo "$(date -Is) downloading obsid=$obsid jobid=$jobid url=$url size=$size hash=$hash"
-        wget $url -O${basedir}/${obsid}${archive_suffix}.tar --progress=dot:giga --wait=60 --random-wait      
+
+    # Download just the tar file and untar inside directory below 
+    singularity run ${GXCONTAINER} giant-squid -k ${obslist}
+
     done
 fi 
 
@@ -51,12 +48,12 @@ list=$(cat "${obslist}")
 for obsnum in $list
 do 
     cd $basedir 
-    if [[ -z $asvo_flag ]]
-    then 
-        obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
-    else 
-        obsfile=$(echo "${obsnum}.tar")
-    fi 
+    # if [[ -z $asvo_flag ]]
+    # then 
+    obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
+    # else 
+    #     obsfile=$(echo "${obsnum}.tar")
+    # fi 
 
     if [[ ! -d "${obsnum}" ]]
     then
