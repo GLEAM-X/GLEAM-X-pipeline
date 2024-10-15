@@ -37,15 +37,14 @@ else
     for obs in $list
     do
         cd $basedir
-        obsfile=$(echo "${obsnum}_"[0-9]*".tar")
+        obsfile=$(echo "${obs}_"[0-9]*".tar")
         if [[ -d $obs ]]
-        then 
-            cd $obs
+        then             
             if [[ -e $obsfile ]]
             then 
                 echo "already have tar for $obs not downloading again!" 
                 sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
-            elif [[ -d "$obs.ms" ]]
+            elif [[ -d "$obs/$obs.ms" ]]
             then 
                 echo "There's already a ms here! Not downloading for $obs" 
                 sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
@@ -60,9 +59,15 @@ else
     done 
 
     cd $basedir 
+    num_ready=$(cat "ready_for_download.txt" | wc -l)
+    echo "There are ${num_ready} obsids ready for download. Downloading with giant-squid now!" 
+
+    # TO AVOID IT GETTING CONFUSED IF THERE ARE MUTLIPLE JOBS ASSOCIATED WITH THE OBSID
+    singularity run ${GXCONTAINER} giant-squid list --states ready ready_for_download.txt | cut -d "|" -f 2 | tail -n +4  | head -n -1 > ready_for_download_jobid.txt
+
 
     # Download just the tar file and untar inside directory below
-    singularity run ${GXCONTAINER} giant-squid download -k ready_for_download.txt 
+    singularity run ${GXCONTAINER} giant-squid download -k ready_for_download_jobid.txt 
 fi 
 
 # -----------------------------------------------------------------------------
