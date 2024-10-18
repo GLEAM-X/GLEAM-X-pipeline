@@ -106,7 +106,7 @@ if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
     echo "submit via:"
-    echo "./${script} | tee ${GXBASE}/log_${GXCLUSTER}/${script}.log"
+    echo "source ${script} | tee ${GXBASE}/log_${GXCLUSTER}/${script}.log"
     exit 0
 fi
 

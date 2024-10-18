@@ -28,10 +28,10 @@ then
 else
     # IF YOU NEED TO ACTUALLY SUBMIT THE JOBS UNCOMMENT! 
     # export params="output=ms,flag_edge_width=80,avg_time_res=${tres},avg_freq_res=${fres}"
-    # singularity run $GXCONTAINER giant-squid submit-conv --parameters=$params ${obslist}
+    # singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid submit-conv --parameters=$params ${obslist}
     
     # get list of ready ones: 
-    singularity run ${GXCONTAINER} giant-squid list --states ready ${obslist} | cut -d "|" -f 3 | tail -n +4  | head -n -1 > ready_for_download.txt
+    singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready ${obslist} | cut -d "|" -f 3 | tail -n +4  | head -n -1 > ready_for_download.txt
     list=()
     list=$(cat "ready_for_download.txt")
     for obs in $list
@@ -67,9 +67,9 @@ else
         echo "There are no jobs ready, don't run the giant-squid or it will just download anything that's ready" 
     else
         # TO AVOID IT GETTING CONFUSED IF THERE ARE MUTLIPLE JOBS ASSOCIATED WITH THE OBSID
-        singularity run ${GXCONTAINER} giant-squid list --states ready ready_for_download.txt | cut -d "|" -f 2 | tail -n +4  | head -n -1 > ready_for_download_jobid.txt
+        singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready ready_for_download.txt | cut -d "|" -f 2 | tail -n +4  | head -n -1 > ready_for_download_jobid.txt
         # Download just the tar file and untar inside directory below
-        singularity run ${GXCONTAINER} giant-squid download -k ready_for_download_jobid.txt 
+        singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid download -k ready_for_download_jobid.txt 
     fi 
 
 fi 
@@ -374,6 +374,6 @@ do
         flags=" $flags 62 84 128 129 130 131 132 133 134 135"
     fi
 
-    singularity run $GXCONTAINER flagantennae ${obsnum}.ms $flags
+    singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" flagantennae ${obsnum}.ms $flags
 
 done 
