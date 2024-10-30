@@ -42,7 +42,7 @@ base=BASEDIR
 debug=DEBUG
 
 # apply calibration
-singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+# singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 cd "${base}/${obsnum}" || exit
 metafits="${obsnum}.metafits"
@@ -144,5 +144,5 @@ test_fail $?
 #     rm -rf ${base}/${obsnum}/${obsnum}.ms && cp -rf ${datadir}/${obsnum}.ms ${base}/${obsnum}/
 # fi
 
-singularity run ${GXCONTAINER} track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
-singularity run ${GXCONTAINER} track_task.py obs_calibrator --obs_id "${obsnum}" --cal_id "${calid}"
+# singularity run ${GXCONTAINER} track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+# singularity run ${GXCONTAINER} track_task.py obs_calibrator --obs_id "${obsnum}" --cal_id "${calid}"
