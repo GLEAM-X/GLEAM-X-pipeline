@@ -12,6 +12,16 @@ pipeuser=PIPEUSER
 obsnum=OBSNUM
 debug=DEBUG
 idg=IDG
+node=NODETYPE
+
+echo $GXCONTAINER 
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default GXCONTAINER"
+fi 
 
 # If obsnum is a file, then we are in an array job
 if [[ -f "${obsnum}" ]]
