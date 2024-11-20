@@ -7,6 +7,7 @@ echo "obs_binoc.sh [-d dep] [-p project] [-a account] [-z] [-t] obsnum
   -p project : project, (must be specified, no default)
   -z         : Debugging mode: image the CORRECTED_DATA column
                 instead of imaging the DATA column
+  -n node    : Node type for dug (default=GXNODETYPE)
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
   obsnum     : the obsid to process, or a text file of obsids (newline separated). 
@@ -20,8 +21,9 @@ pipeuser="${GXUSER}"
 dep=
 tst=
 debug=
+nodetype=
 # parse args and set options
-while getopts ':tzd:a:p:' OPTION
+while getopts ':tzd:a:p:n:' OPTION
 do
     case "$OPTION" in
 	d)
@@ -29,6 +31,9 @@ do
 	    ;;
     p)
         project=${OPTARG}
+        ;;
+    n) 
+        nodetype=${OPTARG}
         ;;
     z)
         debug=1
@@ -70,6 +75,25 @@ then
     account="--account=${GXACCOUNT}"
 fi
 
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
+
 # Establish job array options
 if [[ -f ${obsnum} ]]
 then
@@ -100,11 +124,11 @@ fi
 chmod 755 "${script}"
 
 # sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > ${script}.sbatch
-echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
+# echo '#!/bin/bash' > ${script}.sbatch
+# echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
 sub="sbatch --begin=now+5minutes --export=ALL --time=03:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
+sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${partition} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"

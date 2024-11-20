@@ -4,6 +4,16 @@
 
 pipeuser=PIPEUSER
 obsnum=OBSNUM
+node=NODETYPE
+
+echo $GXCONTAINER 
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default GXCONTAINER"
+fi 
 
 # If obsnum is a file, then we are in an array job
 if [[ -f ${obsnum} ]]
@@ -27,7 +37,7 @@ basedir=BASEDIR
 cd "${basedir}/${obsnum}" || exit 1
 
 # start
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 # S/N Threshold at which to stop cleaning
 tsigma=3
@@ -59,7 +69,7 @@ elif [[ $obsnum -ge 1191580576 ]] ; then
     robust=0.0
 fi
 
-chan=$(pyhead.py -p CENTCHAN "${obsnum}.metafits" | awk '{print $3}')
+chan=$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN "${obsnum}.metafits" | awk '{print $3}')
 
 # Pixel scale
 # At least 4 pix per synth beam for each channel
@@ -72,9 +82,9 @@ do
     cp -rf "${obsnum}.ms" "${obsnum}_flag.ms"
     
     # Apply flagging for direction
-    ms_flag_by_direction.py "${obsnum}_flag.ms" --apply --direction "${dir}" -p
+    singularity run $GXCONTAINER ms_flag_by_direction.py "${obsnum}_flag.ms" --apply --direction "${dir}" -p
 
-    wsclean \
+    singularity run $GXCONTAINER wsclean \
             -abs-mem "${GXMEMORY}" \
             -nmiter 1 \
             -niter 1000000 \
@@ -87,8 +97,8 @@ do
             -scale "${scale:0:8}" \
             "${obsnum}_flag.ms"
 
-    BANE --cores 1 --compress --noclobber "${obsnum}_${dir}-image.fits"
-    aegean --progress --autoload --table="${obsnum}_${dir}-image.fits" "${obsnum}_${dir}-image.fits"
+    singularity run $GXCONTAINER BANE --cores 1 --compress --noclobber "${obsnum}_${dir}-image.fits"
+    singularity run $GXCONTAINER aegean --progress --autoload --table="${obsnum}_${dir}-image.fits" "${obsnum}_${dir}-image.fits"
     rm -rf "${obsnum}_flag.ms"
     rm "${obsnum}_${dir}-image.fits"
     rm "${obsnum}_${dir}-image_bkg.fits"
@@ -98,4 +108,4 @@ do
     rm "${obsnum}_${dir}-residual.fits"
 done
 
-track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
