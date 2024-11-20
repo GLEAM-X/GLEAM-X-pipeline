@@ -9,6 +9,7 @@ echo "obs_uvsub.sh [-d dep] [-a account] [-t] obsnum
   -d dep     : job number for dependency (afterok)
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
+  -n node    : Node type for dug (default=GXNODETYPE)
   -z         : Debug mode, so adjusts the CORRECTED_DATA column
   -i         : IDG mode, give either reference obsnum for position or .txt file of obsids same length as obsnum for each pair 
   obsnum     : the obsid to process, or a text file of obsids (newline separated). 
@@ -22,8 +23,9 @@ dep=
 tst=
 debug=
 idg=
+nodetype=
 # parse args and set options
-while getopts ':ta:d:p:z' OPTION
+while getopts ':ta:d:p:zn:' OPTION
 do
     case "$OPTION" in
 	d)
@@ -37,6 +39,9 @@ do
 	    ;;
     i)
         idg=${OPTARG}
+        ;;
+    n) 
+        node=${OPTARG}
         ;;
 	t)
 	    tst=1
@@ -88,6 +93,26 @@ then
     fi
 fi
 
+
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
+
 script="${GXSCRIPT}/uvsub_${obsnum}.sh"
 
 cat "${GXBASE}/templates/uvsub.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
@@ -118,7 +143,7 @@ chmod 755 "${script}"
 GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=15"
 # fi
 
-sub="sbatch --begin=now+5minutes --export=ALL --mem=50G --time=06:00:00 --output=${output} --error=${error}"
+sub="sbatch --begin=now+1minutes --export=ALL --mem=50G --time=06:00:00 --output=${output} --error=${error}"
 sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
