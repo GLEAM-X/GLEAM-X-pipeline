@@ -110,6 +110,7 @@ script="${GXSCRIPT}/binoc_${obsnum}.sh"
 cat "${GXBASE}/templates/binocular.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                  -e "s:BASEDIR:${base}:g" \
                                  -e "s:DEBUG:${debug}:g" \
+                                 -e "s:NODETYPE:${nodetype}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
 output="${GXLOG}/binoc_${obsnum}.o%A"
