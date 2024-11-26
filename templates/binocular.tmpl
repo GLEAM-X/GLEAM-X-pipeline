@@ -32,12 +32,18 @@ fi
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
 
+ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
+tempdir="${ramDiskBase}${jobid}_${taskid}"
+mkdir -p "$tempdir"
+trap "rm -rf $tempdir" EXIT
+
+
 basedir=BASEDIR
 
 cd "${basedir}/${obsnum}" || exit 1
 
 # start
-singularity run $GXCONTAINER track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+# singularity run $GXCONTAINER track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 # S/N Threshold at which to stop cleaning
 tsigma=3
@@ -82,9 +88,9 @@ do
     cp -rf "${obsnum}.ms" "${obsnum}_flag.ms"
     
     # Apply flagging for direction
-    singularity run $GXCONTAINER ms_flag_by_direction.py "${obsnum}_flag.ms" --apply --direction "${dir}" -p
+    singularity run $GXCONTAINER ms_flag_by_direction.py "${tempdir}/${obsnum}_flag.ms" --apply --direction "${dir}" -p
 
-    singularity run $GXCONTAINER wsclean \
+    singularity run -B ${tempdir}/${obsnum}_flag.ms:/input -B ${tempdir}:/tmp $GXCONTAINER wsclean \
             -abs-mem "${GXMEMORY}" \
             -nmiter 1 \
             -niter 1000000 \
@@ -95,11 +101,11 @@ do
             -pol I \
             -weight briggs "${robust}" \
             -scale "${scale:0:8}" \
-            "${obsnum}_flag.ms"
+            "/input"
 
     singularity run $GXCONTAINER BANE --cores 1 --compress --noclobber "${obsnum}_${dir}-image.fits"
     singularity run $GXCONTAINER aegean --progress --autoload --table="${obsnum}_${dir}-image.fits" "${obsnum}_${dir}-image.fits"
-    rm -rf "${obsnum}_flag.ms"
+    rm -rf "${tempdir}/${obsnum}_flag.ms"
     rm "${obsnum}_${dir}-image.fits"
     rm "${obsnum}_${dir}-image_bkg.fits"
     rm "${obsnum}_${dir}-image_rms.fits"
@@ -108,4 +114,4 @@ do
     rm "${obsnum}_${dir}-residual.fits"
 done
 
-singularity run $GXCONTAINER track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+# singularity run $GXCONTAINER track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
