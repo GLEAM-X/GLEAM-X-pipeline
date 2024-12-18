@@ -41,7 +41,7 @@ do
         idg=${OPTARG}
         ;;
     n) 
-        node=${OPTARG}
+        nodetype=${OPTARG}
         ;;
 	t)
 	    tst=1
@@ -119,6 +119,7 @@ cat "${GXBASE}/templates/uvsub.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                      -e "s:DATADIR:${datadir}:g" \
                                      -e "s:DEBUG:${debug}:g" \
                                      -e "s:IDG:${idg}:g" \
+                                     -e "s:NODETYPE:${nodetype}:g" \
                                      -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
 
