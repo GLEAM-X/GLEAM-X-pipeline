@@ -48,7 +48,12 @@ track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date
 
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
-mkdir -p ${tempdir}
+
+ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
+
+tempdir="${ramDiskBase}${jobid}_${taskid}"
+mkdir -p "$tempdir"
+trap "rm -rf $tempdir" EXIT
 cp -rf ${obsnum}.ms ${tempdir}/
 
 # Adding a check to see if there are any selfsolutions already, will not recalculated
