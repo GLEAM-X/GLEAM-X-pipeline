@@ -210,7 +210,7 @@ then
 else
     rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
     singularity run $GXCONTAINER calibrate \
-            -j ${SLURM_CPUS} \
+            -j ${SLURM_CPUS_PER_TASK} \
             -absmem ${GXABSMEMORY} \
             -minuv ${minuvm} \
             -maxuv ${maxuvm} \
