@@ -36,7 +36,7 @@ tempdir=${GXTEMP}/${jobid}_${taskid}/
 function test_fail {
 if [[ $1 != 0 ]]
 then
-    track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+    singularity run $GXCONTAINER track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
     exit "$1"
 fi
 }
@@ -54,7 +54,7 @@ tsigma=1
 
 # Update database
 cd "${base}" || exit
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
@@ -77,10 +77,10 @@ fi
 # Which data column to image
 if [[ ! -z $debug ]]
 then
-    taql update ${tempdir}/${obsnum}.ms set DATA=CORRECTED_DATA
+    singularity run $GXCONTAINER taql update ${tempdir}/${obsnum}.ms set DATA=CORRECTED_DATA
 fi
 # Removing any previous model column to make sure its not accidentally included in the model for selfcal
-taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA 
+singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA 
 
 # TODO: replace with find
 metafits="$(ls -t ${obsnum}*metafits* | head -1)"
@@ -88,7 +88,7 @@ metafits="$(ls -t ${obsnum}*metafits* | head -1)"
 # Checking if there is a gross sidelobe: 
 if [[ ! -e "${obsnum}_beamlobes.txt" ]]
 then
-    get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
+    singularity run $GXCONTAINER get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
 else
     echo "Already have the beam, not recalculating"
 fi 
@@ -103,12 +103,12 @@ else
     self="False"
 fi 
 
-get_mwa_pb_lobes.py ${metafits} -mM > ${obsnum}_mainlobes.txt
+singularity run $GXCONTAINER get_mwa_pb_lobes.py ${metafits} -mM > ${obsnum}_mainlobes.txt
 ra_mainlobe=$(cat ${obsnum}_mainlobes.txt | awk '{print $2}')
 dec_mainlobe=$(cat ${obsnum}_mainlobes.txt | awk '{print $3}')
 
 # Check if any a-team source is in the main fov
-ateam_fov=$(check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe})
+ateam_fov=$(singularity run $GXCONTAINER check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe})
 # crab_fov=$(check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe} -s "Crab")
 # cyga_fov=$(check_src_fov.py -p ${ra_mainlobe} ${dec_mainlobe} -s "CygA")
 if [[ "$ateam_fov" == "False" ]]
@@ -146,10 +146,10 @@ elif [[ $obsnum -ge 1191580576 ]] ; then
 fi
 
 # Set up channel-dependent options
-chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
-bandwidth="$(pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
-centfreq="$(pyhead.py -p FREQCENT ${metafits} | awk '{print $3}')"
-chans="$(pyhead.py -p CHANNELS ${metafits} | awk '{print $3}' | sed 's/,/ /g')"
+chan="$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+bandwidth="$(singularity run $GXCONTAINER pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
+centfreq="$(singularity run $GXCONTAINER pyhead.py -p FREQCENT ${metafits} | awk '{print $3}')"
+chans="$(singularity run $GXCONTAINER pyhead.py -p CHANNELS ${metafits} | awk '{print $3}' | sed 's/,/ /g')"
 chans=($chans)
 
 # Pixel scale
@@ -178,7 +178,7 @@ set -o pipefail
 # shallow clean (for selfcal) 
 if [[ ! -e "${obsnum}_initial-MFS-XX-image.fits" ]]
 then
-    wsclean \
+    singularity run $GXCONTAINER wsclean \
             -abs-mem ${GXMEMORY} \
             $multiscale \
             -temp-dir ${tempdir}/ \
@@ -209,7 +209,7 @@ then
     exit 1
 else
     rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
-    calibrate \
+    singularity run $GXCONTAINER calibrate \
             -j ${SLURM_CPUS} \
             -absmem ${GXABSMEMORY} \
             -minuv ${minuvm} \
@@ -218,8 +218,8 @@ else
             "${obsnum}.ms" \
             "${obsnum}_selfsolutions.bin" | tee calibrate.log 
 
-    aocal_plot.py --refant=127 ${obsnum}_selfsolutions.bin 
-    result=$(check_assign_solutions.py -t "0.25" check "${obsnum}_selfsolutions.bin")
+    singularity run $GXCONTAINER aocal_plot.py --refant=127 ${obsnum}_selfsolutions.bin 
+    result=$(singularity run $GXCONTAINER check_assign_solutions.py -t "0.25" check "${obsnum}_selfsolutions.bin")
 fi 
 
 
@@ -236,4 +236,4 @@ fi
 
 rm *initial*fits
 
-track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+singularity run $GXCONTAINER track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
