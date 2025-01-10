@@ -4,6 +4,16 @@ set -x
 
 pipeuser=PIPEUSER
 obsnum=OBSNUM
+node=NODETYPE
+
+echo $GXCONTAINER 
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default GXCONTAINER"
+fi 
 
 # If obsnum is a file, then we are in an array job
 if [[ -f "${obsnum}" ]]
@@ -172,6 +182,9 @@ then
             -abs-mem ${GXMEMORY} \
             $multiscale \
             -temp-dir ${tempdir}/ \
+            -j ${SLURM_CPUS_PER_TASK} \
+            -nwlayers 100 \
+            -parallel-gridding ${SLURM_CPUS_PER_TASK} \
             -nmiter 1 \
             -niter 40000 \
             -stop-negative \
@@ -197,7 +210,7 @@ then
 else
     rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
     calibrate \
-            -j ${GXNCPUS} \
+            -j ${SLURM_CPUS} \
             -absmem ${GXABSMEMORY} \
             -minuv ${minuvm} \
             -maxuv ${maxuvm} \

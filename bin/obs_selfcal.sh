@@ -9,6 +9,7 @@ echo "obs_image.sh [-d dep] [-p project] [-a account] [-z] [-t] obsnum
                using the CORRECTED_DATA column, so if this is selected it assumes you've been using the corrected to this point and OVERWRITES THE DATA COLUMN with the corrected! USE WITH CAUTION!
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
+  -n node    : Node type to use for dug (default=GXNODETYPE)
   obsnum     : the obsid to process, or a text file of obsids (newline separated). 
                A job-array task will be submitted to process the collection of obsids. " 1>&2;
 exit 1;
@@ -20,8 +21,9 @@ pipeuser="${GXUSER}"
 dep=
 tst=
 debug=
+nodetype=
 # parse args and set options
-while getopts ':tzd:a:p:' OPTION
+while getopts ':tzd:n:a:p:' OPTION
 do
     case "$OPTION" in
 	d)
@@ -29,6 +31,9 @@ do
 	    ;;
     a)
         account=${OPTARG}
+        ;;
+    n) 
+        nodetype=${OPTARG}
         ;;
     p)
         project=${OPTARG}
@@ -84,11 +89,31 @@ else
     jobarray=''
 fi
 
+
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
 # start the real program
 
 script="${GXSCRIPT}/selfcal_${obsnum}.sh"
 cat "${GXBASE}/templates/selfcal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                  -e "s:BASEDIR:${base}:g" \
+                                 -e "s:NODETYPE:${nodetype}:g" \
                                  -e "s:DEBUG:${debug}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
@@ -101,14 +126,25 @@ then
    error="${error}_%a"
 fi
 
+
+if [[ ${GXCOMPUTER} == "dug" ]]
+then
+    CPUSPERTASK=10
+    MEMPERTASK=80
+else 
+    CPUSPERTASK=${GXNCPUS}
+    MEMPERTASK=${GXABSMEMORY}
+fi
+
+
 chmod 755 "${script}"
 
 # sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > ${script}.sbatch
-echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
+# echo '#!/bin/bash' > ${script}.sbatch
+# echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
-sub="sbatch --begin=now --export=ALL  --time=12:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
+sub="sbatch --begin=now --export=ALL  --time=05:00:00 --mem=${MEMPERTASK}G --cpus-per-task=${CPUSPERTASK} --output=${output} --error=${error}"
+sub="${sub} ${partition} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
