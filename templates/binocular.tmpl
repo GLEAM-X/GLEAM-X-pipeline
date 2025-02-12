@@ -85,7 +85,7 @@ dirs="north south east west"
 
 for dir in $dirs
 do
-    cp -rf "${obsnum}.ms" "${obsnum}_flag.ms"
+    cp -rf "${obsnum}.ms" "${tempdir}/${obsnum}_flag.ms"
     
     # Apply flagging for direction
     singularity run $GXCONTAINER ms_flag_by_direction.py "${tempdir}/${obsnum}_flag.ms" --apply --direction "${dir}" -p
