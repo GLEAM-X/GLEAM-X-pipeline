@@ -262,6 +262,7 @@ then
             di-calibrate \
             --timesteps {20..29} \
             --max-iterations 500 \
+            --source-dist-cutoff 180 \
             --num-sources 250 \
             --uvw-min "${minuv}lambda" \
             --uvw-max 1667lambda \
@@ -307,6 +308,7 @@ else
     singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --uvw-min "${minuv}lambda" \
+        --source-dist-cutoff 180 \
         --max-iterations 500 \
         --num-sources 250 \
         --uvw-max 1667lambda \
