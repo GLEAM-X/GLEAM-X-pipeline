@@ -124,7 +124,7 @@ minuv=$(singularity run $GXCONTAINER get_baselines_from_lambdas.py ${freq} ${CAL
 # Actual calibration to generate the model to peel
  singularity run $GXCONTAINER calibrate \
         -j ${SLURM_CPUS_PER_TASK} \
-        -absmem ${SLURM_MEM_PER_NODE} \
+        -absmem 60 \
         -t ${timeSteps} \
         -ch 2 \
         -datacolumn ${datacolumn} \
