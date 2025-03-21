@@ -79,7 +79,7 @@ radec_hmsdms=$(singularity run $GXCONTAINER dd_hms_dms.py ${ra} ${dec} -d "hms")
 scale=$(echo "$basescale / $chan" | bc -l)
 
 
-maxIntervals="$(singularity run $GXCONTAINER ms_get_max_intervals.py ${tempdir}/${obsid}.ms)"
+maxIntervals="$(singularity run $GXCONTAINER ms_get_max_intervals.py ${tempdir}/${obsnum}.ms)"
 timeSteps=1
 timesOut=${maxIntervals}
 chansOut=32
@@ -91,7 +91,7 @@ image_size=${image_size%.*}
 # Phase rotate to CygA
 source_ra=299.8681250
 source_dec=40.7339139
-singularity run $GXCONTAINER ms_rotate.py ${tempdir}/${obsid}.ms ${source_ra} ${source_dec} -c ${datacolumn}
+singularity run $GXCONTAINER ms_rotate.py ${tempdir}/${obsnum}.ms ${source_ra} ${source_dec} -c ${datacolumn}
 
 # Image to update model column used to peel
 singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINER wsclean \
