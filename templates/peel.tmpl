@@ -1,90 +1,157 @@
-#! /bin/bash -l
-#SBATCH --export=NONE
-#SBATCH -M galaxy
-#SBATCH -p workq
-#SBATCH --account=mwasci
-#SBATCH --time=12:00:00
-#SBATCH --nodes=1
+#! /bin/bash -l 
+start_time=$(date +%s)
+set -x
 
 # Task to identify an object to peel and then ... peel. 
-# Originally based on the calibrate.tmpl file. Will be 
-# gutting and rewriting as needed. This is a placeholder
-# until process has been made, at which point this 
-# message will be removed. 
+# Originally based on the calibrate.tmpl file. Now using scripts/development from Stefan Duchense piip/potatopeel
+# CURRENTLY THIS IS HARD CODED JUST FOR CYGA BECAUSE THIS SEEMS THE ONLY RELEVANT ONE BUT PERHAPS WILL NEED FIXING TO BE MORE GENERAL IN FUTURE 
 
-source /group/mwasci/$SLURM_JOB_USER/GLEAM-X-pipeline/GLEAM-X-pipeline.profile
-
-function test_fail {
-if [[ $1 != 0 ]]
-then
-    cd ${base}
-    track_task.py fail --jobid=${SLURM_JOBID} --finish_time=`date +%s`
-    exit $1
-fi
-}
-
-# automatically set the right number of cores
-# maybe leaving -d blank will do this ...
-if [[ $SLURM_JOB_PARTITION -eq "gpuq" ]]
-then
-    cores=8
-else #if [[ $SLURM_JOB_PARTITION -eq "workq" ]]
-    cores=20
-fi
-
-base=BASEDIR
-datadir="${base}/processing"
-modeldir="/group/mwasci/code/anoko/mwa-reduce/models"
+pipeuser=PIPEUSER
 obsnum=OBSNUM
+node=NODETYPE
+debug=DEBUG
+base=BASEDIR
 
+if [[ ! -z $debug ]]
+then 
+    datacolumn=CORRECTED_DATA
+else 
+    datacolumn=DATA
+fi 
 
-# Step 1: acquire list of objects that may need to be peeled
+echo $GXCONTAINER 
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default $GXCONTAINER"
+fi 
 
-# start
-cd ${base}
-
-calmodel=`basename $modeldir/model-$calibrator*comp_withalpha.txt`
-if [[ ! -e $modeldir/$calmodel ]]
+# If obsnum is a file, then we are in an array job
+if [[ -f "${obsnum}" ]]
 then
-    calmodel=`basename $modeldir/model-$calibrator*point-source.txt`
+    taskid="${SLURM_ARRAY_TASK_ID}"
+    jobid="${SLURM_ARRAY_JOB_ID}"
+
+    echo "obsfile ${obsnum}"
+    obsnum=$(sed -n -e "${SLURM_ARRAY_TASK_ID}"p "${obsnum}")
+    echo "image obsid ${obsnum}"
+else
+    taskid=1
+    jobid="${SLURM_JOB_ID}"
 fi
-if [[ ! -e $modeldir/$calmodel ]]
+
+echo "jobid: ${jobid}"
+echo "taskid: ${taskid}"
+tempdir=${GXTEMP}/${jobid}_${taskid}/
+
+
+datadir="${base}/${obsnum}"
+cd "${datadir}" || exit
+ramDiskBase=$(mktemp -d /dev/shm/${jobid}_${taskid}.XXX)
+
+tempdir="${ramDiskBase}${jobid}_${taskid}"
+mkdir -p "$tempdir"
+trap "rm -rf $tempdir" EXIT
+cp -rf ${obsnum}.ms ${tempdir}/
+
+# Set up channel-dependent options
+chan="$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+bandwidth="$(singularity run $GXCONTAINER pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
+centfreq="$(singularity run $GXCONTAINER pyhead.py -p FREQCENT ${metafits} | awk '{print $3}')"
+chans="$(singularity run $GXCONTAINER pyhead.py -p CHANNELS ${metafits} | awk '{print $3}' | sed 's/,/ /g')"
+chans=($chans)
+minuv=75
+minuvm=$(echo "234 * $minuv / $chan" | bc -l)
+maxuvm=$(echo "390000 / (${chan} + 11)" | bc -l)
+
+
+ra=$(singularity run $GXCONTAINER pyhead.py -p RA "$metafits" | awk '{print $3}' )
+dec=$(singularity run $GXCONTAINER pyhead.py -p DEC "$metafits" | awk '{print $3}' )
+radec_hmsdms=$(singularity run $GXCONTAINER dd_hms_dms.py ${ra} ${dec} -d "hms")
+
+
+# Pixel scale
+ # At least 4 pix per synth beam for each channel
+scale=$(echo "$basescale / $chan" | bc -l)
+
+
+maxIntervals="$(singularity run $GXCONTAINER ms_get_max_intervals.py ${tempdir}/${obsid}.ms)"
+timeSteps=1
+timesOut=${maxIntervals}
+chansOut=32
+
+image_size=$(echo "0.5/${scale}" | bc -l)
+image_size=${image_size%.*}
+
+# TODO: Check the form for ra and dec, NOTE: 'CygA': '19:59:28.35663 +40:44:02.0970'
+# Phase rotate to CygA
+singularity run $GXCONTAINER ms_rotate.py ${tempdir}/${obsid}.ms ${source_ra} ${source_dec} -c ${datacolumn}
+
+# Image to update model column used to peel
+singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINER wsclean \
+        -abs-mem 60 \
+        -j ${SLURM_CPUS_PER_TASK} \
+        -parallel-gridding ${SLURM_CPUS_PER_TASK} \
+        -temp-dir /tmp \
+        -nmiter 5 \
+        -niter 100000 \
+        -auto-mask 5 \
+        -auto-threshold 1 \
+        -padding 3 \
+        -use-wgridder \
+        -name ${obsnum}_CygA \
+        -size ${image_size} ${image_size} \
+        -scale ${scale:0:8} \
+        -weight briggs 0.0 \
+        -pol xx,yy \
+        -join-channels \
+        -miniuv-l 0 \
+        -channels-out ${chansOut} \
+        -intervals-out ${timesOut} \
+        -fit-spectral-pol 3 \
+        -data-column ${datacolumn} \
+        /input | tee wsclean.log
+
+minuv=$(singularity run $GXCONTAINER get_baselines_from_lambdas.py ${freq} ${CAL_MINUV})
+
+
+# Actual calibration to generate the model to peel
+ singularity run $GXCONTAINER calibrate \
+        -j ${SLURM_CPUS_PER_TASK} \
+        -absmem ${SLURM_MEM_PER_NODE} \
+        -t ${timeSteps} \
+        -ch 2 \
+        -datacolumn ${datacolumn} \
+        ${tempdir}/${obsnum}.ms \
+        ${tempdir}/${obsnum}_CygA.bin > ${obsnum}_calibrate_CygA.log 2>&1
+
+result=$(singularity run $GXCONTAINER check_assign_solutions.py -t 0.4 check ${tempdir}/${obsnum}_CygA.bin)
+if echo "${result}" | grep -q fail
 then
-    echo "No calibrator model available for $calibrator in $modeldir."
-    cd $modeldir
-    callist=`ls *-point-source.txt | sed "s/model-//g" | sed "s/-point-source.txt//g"`
-    echo "Available calibrators are: $callist in $modeldir"
-    echo "Use the name as it is specified in the observing database, e.g. HydA for Hydra A."
-    test_fail 1
-    exit 1
+    mv "${solutions%.bin}_ref.bin" "${solutions%.bin}_ref_failed.bin"
+    echo "THE CALIBRATION FAILED! :( "
+
+else 
+    singularity run $GXCONTAINER invert_solutions.py ${tempdir}/${obsnum}_CygA.bin -o ${tempdir}/${obsnum}_CygA_inv.bin
+    singularity run $GXCONTAINER applysolutions \
+    -datacolumn "MODEL_DATA" \
+    -nocopy \
+    ${tempdir}/${obsnum}.ms \
+    ${tempdir}/${obsnum}_CugA_inv.bin
+
+    singularity run $GXCONTAINER subtrmodel -usemodelcol \
+    -datacolumn ${datacolumn} \
+    "model" \
+    ${tempdir}/${obsnum}.ms
+    singularity run $GXCONTAINER ms_rotate.py ${tempdir}${obsnum}.ms ${ra} ${dec}
+
+    singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA 
+
 fi
 
-cd ${datadir}/${obsnum}
 
-# Ionospheric triage
-solutions=${obsnum}_${calmodel%%.txt}_solutions_ts${ts}.bin
-calibrate -t ${ts} -j ${cores} -m ${calmodel} -minuv 2 -maxuv 2000 ${obsnum}.ms ${solutions}
-test_fail $?
-
-aocal_plot.py --refant=127 --amp_max=2 ${solutions}
-test_fail $?
-
-aocal_diff.py --metafits=$metafits --names $solutions
-test_fail $?
-
-iono_update.py --ionocsv ${obsnum}_ionodiff.csv
-test_fail $?
-
-solutions=${obsnum}_${calmodel%%.txt}_solutions_initial.bin
-
-# calibrate
-calibrate -j ${cores} -m ${modeldir}/${calmodel} -minuv 20 -maxuv 2000 -applybeam ${obsnum}.ms ${solutions}
-test_fail $?
-
-# plot calibration solutions
-aocal_plot.py --refant=127 --amp_max=2 ${solutions}
-test_fail $?
-
-cd ${base}
-track_task.py finish --jobid=${SLURM_JOBID} --finish_time=`date +%s`
-track_task.py obs_status --obs_id=${obsnum} --status='calibrated'
+end_time=$(date +%s)
+duration=$(echo "${end_time}-${start_time}" | bc -l)
+echo "INFO: Total time taken: ${duration}"

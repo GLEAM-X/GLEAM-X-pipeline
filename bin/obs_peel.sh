@@ -3,48 +3,52 @@
 # Script to drive the peeling process. Originally based on the obs_calibrate.sh script. 
 usage()
 {
-echo "obs_peel.sh [-d dep] [-q queue] [-n calname] [-t] obsnum
+echo "obs_peel.sh [-d dep] [-p project] [-n nodetype] [-z] [-t] obsnum
 
     Script to drive the peeling process across a set of observation IDs.
 
   -d dep     : job number for dependency (afterok)
-  -q queue   : job queue, default=workq
+  -p prject  : project, must be specified (no default)
+  -n nodetype: for DUG processing in case you want to send to fancy node 
+  -z         : debugging option: work on the CORRECTED_DATA column instead of the DATA
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
   obsnum     : the obsid to process" 1>&2;
 exit 1;
 }
 
-# Supercomputer options
-if [[ "${HOST:0:4}" == "gala" ]]
-then
-    computer="galaxy"
-    account="pawsey0272"
-    standardq="workq"
-    absmem=60
-#    standardq="gpuq"
-#    absmem=30
-elif [[ "${HOST:0:4}" == "magn" ]]
-then
-    computer="magnus"
-    account="pawsey0272"
-    standardq="workq"
-    absmem=60
-elif [[ "${HOST:0:4}" == "athe" ]]
-then
-    computer="athena"
-    account="pawsey0272"
-    standardq="gpuq"
-    absmem=30 # Check this
-fi
 
-#initialize as empty
-scratch=/astro
-base="$scratch/mwasci/$USER/GLEAMX/"
+pipeuser="${GXUSER}"
+
+#initial variables
 dep=
-queue='-p workq'
-calname=
 tst=
+debug=
+nodetype=
+# parse args and set options
+while getopts ':tzd:p:n:' OPTION
+do
+    case "$OPTION" in
+	d)
+	    dep=${OPTARG}
+	    ;;
+    p)
+        project=${OPTARG}
+        ;;
+    n)
+        nodetype=${OPTARG}
+        ;;
+    z)
+        debug=1
+        ;;
+	t)
+	    tst=1
+	    ;;
+	? | : | h)
+	    usage
+	    ;;
+  esac
+done
 
 # parse args and set options
 while getopts ':td:q:' OPTION
@@ -69,30 +73,86 @@ done
 shift  "$(($OPTIND -1))"
 obsnum=$1
 
-# if obsid is empty then just pring help
-if [[ -z ${obsnum} ]]
+queue="-p ${GXSTANDARDQ}"
+base="${GXSCRATCH}/$project"
+code="${GXBASE}"
+
+
+# if obsid is empty then just print help
+
+if [[ -z ${obsnum} ]] || [[ -z $project ]] || [[ ! -d ${base} ]]
 then
     usage
 fi
 
-# set dependency
 if [[ ! -z ${dep} ]]
 then
-    depend="--dependency=afterok:${dep}"
+    if [[ -f ${obsnum} ]]
+    then
+        depend="--dependency=aftercorr:${dep}"
+    else
+        depend="--dependency=afterok:${dep}"
+    fi
 fi
 
-script="${base}queue/peel_${obsnum}.sh"
+if [[ ! -z ${GXACCOUNT} ]]
+then
+    account="--partition=${GXACCOUNT}"
+fi
 
-cat ${base}/bin/peel.tmpl | sed -e "s:OBSNUM:${obsnum}:g" \
+# Establish job array options
+if [[ -f ${obsnum} ]]
+then
+    numfiles=$(wc -l "${obsnum}" | awk '{print $1}')
+    jobarray="--array=1-${numfiles}"
+else
+    numfiles=1
+    jobarray=''
+fi
+
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
+
+script="${GXSCRIPT}/peel_${obsnum}.sh"
+
+cat ${GXBASE}/templates/peel.tmpl | sed -e "s:OBSNUM:${obsnum}:g" \
                                 -e "s:BASEDIR:${base}:g" \
-                                -e "s:HOST:${computer}:g" \
-                                -e "s:STANDARDQ:${standardq}:g" \
-                                -e "s:ACCOUNT:${account}:g" > ${script}
+                                -e "s:DEBUG:${debug}:g" \
+                                -e "s:NODETYPE:${nodetype}:g" \
+                                -e "s:PIPEUSER:${pipeuser}:g" > ${script}
 
-output="${base}queue/logs/peel_${obsnum}.o%A"
-error="${base}queue/logs/peel_${obsnum}.e%A"
+output="${GXLOG}/peel_${obsnum}.o%A"
+error="${GXLOG}/peel_${obsnum}.e%A"
 
-sub="sbatch --begin=now+15 --output=${output} --error=${error} ${depend} ${queue} ${script}"
+# TODO: Maybe check that it is appropriate for this! 
+if [[ ${GXCOMPUTER} == "dug" ]]
+then
+    CPUSPERTASK=10
+    MEMPERTASK=80
+else 
+    CPUSPERTASK=${GXNCPUS}
+    MEMPERTASK=${GXABSMEMORY}
+fi
+
+sub="sbatch --begin=now+1minutes --export=ALL  --time=03:00:00 --mem=${MEMPERTASK}G --cpus-per-task=${CPUSPERTASK} --output=${output} --error=${error}"
+sub="${sub} ${partition} ${jobarray} ${depend} ${script}"
+
 
 if [[ ! -z ${tst} ]]
 then
@@ -105,10 +165,21 @@ fi
 # submit job
 jobid=($(${sub}))
 jobid=${jobid[3]}
-taskid=1
 
-# rename the err/output files as we now know the jobid
-error=`echo ${error} | sed "s/%A/${jobid}/"`
-output=`echo ${output} | sed "s/%A/${jobid}/"`
+echo "Submitted ${script} as ${jobid} . Follow progress here:"
+for taskid in $(seq ${numfiles})
+    do
+    # rename the err/output files as we now know the jobid
+    obserror=$(echo "${error}" | sed -e "s/%A/${jobid}/" -e "s/%a/${taskid}/")
+    obsoutput=$(echo "${output}" | sed -e "s/%A/${jobid}/" -e "s/%a/${taskid}/")
 
-echo "Submitted ${script} as ${jobid}"
+    if [[ -f ${obsnum} ]]
+    then
+        obs=$(sed -n -e "${taskid}"p "${obsnum}")
+    else
+        obs=$obsnum
+    fi
+
+    echo "$obsoutput"
+    echo "$obserror"
+done
