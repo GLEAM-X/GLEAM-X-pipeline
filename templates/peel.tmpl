@@ -56,6 +56,8 @@ mkdir -p "$tempdir"
 trap "rm -rf $tempdir" EXIT
 cp -rf ${obsnum}.ms ${tempdir}/
 
+metafits="$(ls -t ${obsnum}*metafits* | head -1)"
+
 # Set up channel-dependent options
 chan="$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
 bandwidth="$(singularity run $GXCONTAINER pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
