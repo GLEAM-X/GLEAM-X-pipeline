@@ -158,14 +158,17 @@ if echo "${result}" | grep -q fail
 then
     mv "${solutions%.bin}_ref.bin" "${solutions%.bin}_ref_failed.bin"
     echo "THE CALIBRATION FAILED! :( "
-
+    end_time=$(date +%s)
+    duration=$(echo "${end_time}-${start_time}" | bc -l)
+    echo "INFO: Total time taken: ${duration}"
+    exit 1
 else 
-    singularity run $GXCONTAINER invert_solutions.py ${tempdir}/${obsnum}_CygA.bin -o ${tempdir}/${obsnum}_CygA_inv.bin
+    singularity run $GXCONTAINER invert_solutions.py ${obsnum}_CygA.bin -o ${obsnum}_CygA_inv.bin
     singularity run $GXCONTAINER applysolutions \
     -datacolumn "MODEL_DATA" \
     -nocopy \
     ${tempdir}/${obsnum}.ms \
-    ${tempdir}/${obsnum}_CygA_inv.bin
+    ${obsnum}_CygA_inv.bin
 
     singularity run $GXCONTAINER subtrmodel -usemodelcol \
     -datacolumn ${datacolumn} \
@@ -176,6 +179,17 @@ else
     singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA 
 
 fi
+
+if [[ -e "${obsnum}_CygA_inv.bin" ]]
+then
+    # rm -rf ${tempdir}/
+    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
+    rm -rf ${tempdir}/
+else 
+    echo "There is no final image so I haven't subtracted anything because I'm not sure what's wrong" 
+    rm -rf ${tempdir}/
+    exit 1
+fi 
 
 
 end_time=$(date +%s)
