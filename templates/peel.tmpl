@@ -99,9 +99,16 @@ radec_hmsdms=$(singularity run $GXCONTAINER dd_hms_dms.py ${ra} ${dec} -d "hms")
  # At least 4 pix per synth beam for each channel
 scale=$(echo "$basescale / $chan" | bc -l)
 
+# Skipping first and last 8 seconds
+interval_start=$((8/timeres))
+nscans=$(singularity run $GXCONTAINER pyhead.py -p NSCANS "${metafits}" | awk '{print $3}')
+# native time resolution is 0.5 seconds
+ninterval=$(echo "$nscans*0.5/$timeres" | bc)
+interval_stop=$((ninterval-interval_start))
+intervals_out=$((interval_stop-interval_start))
 
 maxIntervals="$(singularity run $GXCONTAINER ms_get_max_intervals.py ${tempdir}/${obsnum}.ms)"
-timeSteps=1
+timeSteps=2
 timesOut=${maxIntervals}
 chansOut=32
 
@@ -126,7 +133,6 @@ singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINE
         -auto-mask 5 \
         -auto-threshold 1 \
         -padding 3 \
-        -use-wgridder \
         -name ${obsnum}_CygA \
         -size ${image_size} ${image_size} \
         -scale ${scale:0:8} \
@@ -135,7 +141,8 @@ singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINE
         -join-channels \
         -minuv-l 0 \
         -channels-out ${chansOut} \
-        -intervals-out ${timesOut} \
+        -interval $interval_start $interval_stop \
+        -intervals-out $intervals_out \
         -fit-spectral-pol 3 \
         -data-column ${datacolumn} \
         /input | tee wsclean.log
