@@ -67,6 +67,9 @@ chans=($chans)
 minuv=75
 minuvm=$(echo "234 * $minuv / $chan" | bc -l)
 maxuvm=$(echo "390000 / (${chan} + 11)" | bc -l)
+freq=$(echo "${chan}*1.28" | bc -l)
+scale=$(echo "0.55/${chan}" | bc -l)
+fov=$(echo "${scale}*${IMSIZE}/2" | bc -l)
 
 
 ra=$(singularity run $GXCONTAINER pyhead.py -p RA "$metafits" | awk '{print $3}' )
