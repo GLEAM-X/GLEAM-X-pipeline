@@ -6,7 +6,7 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 
-FLOAT_TYPES = [float, np.float32, np.float64, np.float]
+FLOAT_TYPES = [float, np.float32, np.float64]
 
 def dd_hms_dms(ra, dec, delim=":"):
     """Convert from DD to HMS:DMS."""
