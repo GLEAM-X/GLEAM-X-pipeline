@@ -132,14 +132,15 @@ singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINE
         -weight briggs 0.0 \
         -pol xx,yy \
         -join-channels \
-        -miniuv-l 0 \
+        -minuv-l 0 \
         -channels-out ${chansOut} \
         -intervals-out ${timesOut} \
         -fit-spectral-pol 3 \
         -data-column ${datacolumn} \
         /input | tee wsclean.log
 
-minuv=$(singularity run $GXCONTAINER get_baselines_from_lambdas.py ${freq} ${CAL_MINUV})
+# Note: Hard coded to match Stefans value... 
+minuv=$(singularity run $GXCONTAINER get_baselines_from_lambdas.py ${freq} 100)
 
 
 # Actual calibration to generate the model to peel
@@ -150,9 +151,9 @@ minuv=$(singularity run $GXCONTAINER get_baselines_from_lambdas.py ${freq} ${CAL
         -ch 2 \
         -datacolumn ${datacolumn} \
         ${tempdir}/${obsnum}.ms \
-        ${tempdir}/${obsnum}_CygA.bin > ${obsnum}_calibrate_CygA.log 2>&1
+        ${obsnum}_CygA.bin > ${obsnum}_calibrate_CygA.log 2>&1
 
-result=$(singularity run $GXCONTAINER check_assign_solutions.py -t 0.4 check ${tempdir}/${obsnum}_CygA.bin)
+result=$(singularity run $GXCONTAINER check_assign_solutions.py -t 0.4 check ${obsnum}_CygA.bin)
 if echo "${result}" | grep -q fail
 then
     mv "${solutions%.bin}_ref.bin" "${solutions%.bin}_ref_failed.bin"
@@ -170,7 +171,7 @@ else
     -datacolumn ${datacolumn} \
     "model" \
     ${tempdir}/${obsnum}.ms
-    singularity run $GXCONTAINER ms_rotate.py ${tempdir}${obsnum}.ms ${ra} ${dec}
+    singularity run $GXCONTAINER ms_rotate.py ${tempdir}/${obsnum}.ms ${ra} ${dec}
 
     singularity run $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA 
 
