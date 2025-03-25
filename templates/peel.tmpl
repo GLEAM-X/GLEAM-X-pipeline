@@ -120,6 +120,7 @@ singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINE
         -j ${SLURM_CPUS_PER_TASK} \
         -parallel-gridding ${SLURM_CPUS_PER_TASK} \
         -temp-dir /tmp \
+        -mgain 0.8 \
         -nmiter 5 \
         -niter 100000 \
         -auto-mask 5 \
