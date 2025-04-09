@@ -164,6 +164,13 @@ minuv=$(singularity run $GXCONTAINER get_baselines_from_lambdas.py ${freq} 100)
         ${tempdir}/${obsnum}.ms \
         ${obsnum}_CygA.bin > ${obsnum}_calibrate_CygA.log 2>&1
 
+singularity run $GXCONTAINER hyperdrive \
+        solutions-plot \
+        --ref-tile 127 \
+        --max-amp 2 \
+        -m ${obsnum}.metafits \
+        "${obsnum}_CygA.bin" 
+
 result=$(singularity run $GXCONTAINER check_assign_solutions.py -t 0.4 check ${obsnum}_CygA.bin)
 if echo "${result}" | grep -q fail
 then
