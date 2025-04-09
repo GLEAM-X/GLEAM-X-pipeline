@@ -167,7 +167,7 @@ minuv=$(singularity run $GXCONTAINER get_baselines_from_lambdas.py ${freq} 100)
 result=$(singularity run $GXCONTAINER check_assign_solutions.py -t 0.4 check ${obsnum}_CygA.bin)
 if echo "${result}" | grep -q fail
 then
-    mv "${solutions%.bin}_ref.bin" "${solutions%.bin}_ref_failed.bin"
+    mv "${obsnum}_CygA.bin" "${obsnum}_CygA_failed.bin"
     echo "THE CALIBRATION FAILED! :( "
     end_time=$(date +%s)
     duration=$(echo "${end_time}-${start_time}" | bc -l)

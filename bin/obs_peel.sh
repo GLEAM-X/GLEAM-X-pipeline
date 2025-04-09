@@ -167,6 +167,7 @@ jobid=($(${sub}))
 jobid=${jobid[3]}
 
 echo "Submitted ${script} as ${jobid} . Follow progress here:"
+
 for taskid in $(seq ${numfiles})
     do
     # rename the err/output files as we now know the jobid
