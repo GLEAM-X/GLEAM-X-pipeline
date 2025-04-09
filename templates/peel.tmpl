@@ -113,7 +113,7 @@ intervals_out=$((interval_stop-interval_start))
 maxIntervals="$(singularity run $GXCONTAINER ms_get_max_intervals.py ${tempdir}/${obsnum}.ms)"
 timeSteps=2
 timesOut=${maxIntervals}
-chansOut=32
+chansOut=4
 
 image_size=$(echo "0.5/${scale}" | bc -l)
 image_size=${image_size%.*}
