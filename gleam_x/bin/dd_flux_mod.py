@@ -93,11 +93,11 @@ else:
         k, l = w_psf.wcs_world2pix(ra, dec, 1)
 
         # Testing this suggests it is 100x+ faster.
-        k_int = np.floor(k).astype(np.int)
+        k_int = np.floor(k).astype(int)
         k_mask = (k_int >= 0) & (k_int <= 360)
         k_int[~k_mask] = 0
 
-        l_int = np.floor(l).astype(np.int)
+        l_int = np.floor(l).astype(int)
         l_mask = (l_int >= 0) & (l_int <= 180)
         l_int[~l_mask] = 0
 
