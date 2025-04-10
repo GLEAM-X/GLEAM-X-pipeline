@@ -287,7 +287,7 @@ RUN python -m pip install --no-cache-dir \
     git+https://github.com/tjgalvin/fits_warp.git \
     git+https://github.com/MWATelescope/mwa-calplots.git \
     git+https://github.com/ICRAR/manta-ray-client.git \
-    git+https://github.com/tjgalvin/mwa_pb_lookup.git \
+    git+https://github.com/astrokatross/mwa_pb_lookup.git \
     git+https://github.com/GLEAM-X/GLEAM-X-pipeline.git \
     git+https://github.com/MWATelescope/mwa_pb.git \
     ;
