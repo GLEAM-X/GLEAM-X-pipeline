@@ -140,6 +140,13 @@ cat ${GXBASE}/templates/peel.tmpl | sed -e "s:OBSNUM:${obsnum}:g" \
 output="${GXLOG}/peel_${obsnum}.o%A"
 error="${GXLOG}/peel_${obsnum}.e%A"
 
+if [[ -f ${obsnum} ]]
+then
+   output="${output}_%a"
+   error="${error}_%a"
+fi
+
+
 # TODO: Maybe check that it is appropriate for this! 
 if [[ ${GXCOMPUTER} == "dug" ]]
 then
