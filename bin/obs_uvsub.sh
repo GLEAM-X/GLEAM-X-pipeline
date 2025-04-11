@@ -145,7 +145,7 @@ GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=15"
 # fi
 
 sub="sbatch --begin=now+1minutes --export=ALL --mem=50G --time=06:00:00 --output=${output} --error=${error}"
-sub="${sub} ${partition} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${script}"
+sub="${sub} ${partition} ${GXNCPULINE} ${account} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
