@@ -21,7 +21,7 @@ except IndexError:
 stokes_I = (hdu_xx[0].data + hdu_yy[0].data) / 2.0
 shape = np.array(hdu_rms[0].data.shape)
 cen = shape // 2
-delta = np.ceil(shape * 0.05).astype(np.int)
+delta = np.ceil(shape * 0.05).astype(int)
 
 
 # Use a central region of the RMS map to calculate the weight via inverse variance
