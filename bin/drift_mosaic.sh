@@ -2,7 +2,7 @@
 
 usage()
 {
-echo "drift_mosaic.sh [-p project] [-d dep] [-q queue] [-a account] [-t] [-f] [-r ra] [-e dec] -o list_of_observations.txt
+echo "drift_mosaic.sh [-p project] [-d dep] [-q queue] [-a account] [-t] [-f] [-r ra] [-e dec] [-m mosaicdir] [-s nscat] -o list_of_observations.txt
   -p project  : project, (must be specified, no default)
   -d dep      : job number for dependency (afterok)
   -t          : test. Don't submit job, just make the batch file
@@ -11,6 +11,7 @@ echo "drift_mosaic.sh [-p project] [-d dep] [-q queue] [-a account] [-t] [-f] [-
                 observations with high blur factors. This will only work if the 
                 drift_rescale.sh task has been processed with a supplied -b psf option.  
   -r RA       : Right Ascension (decimal hours; default = guess from observation list)
+  -s nscat    : Option for psf_select, do you want a different source catalogue for PSF creation/ddmod? Give name of catalogue and assumes in $GXBASE/models
   -e dec      : Declination (decimal degrees; default = guess from observation list)
   -m mosaicdir: Directory name for mosaics to be created (default=mosaic) 
   -o obslist  : the list of obsids to process" 1>&2;
@@ -29,7 +30,7 @@ mosaicdir=
 filtered=
 
 # parse args and set options
-while getopts ':td:p:o:r:e:m:f' OPTION
+while getopts ':td:p:o:r:e:m:n:f' OPTION
 do
     case "$OPTION" in
     d)
@@ -44,6 +45,8 @@ do
         dec=${OPTARG} ;;
     m) 
         mosaicdir=${OPTARG} ;;
+    n)
+        sourcecat=${OPTARG} ;;
     t)
         tst=1 ;;
     f) 
@@ -85,6 +88,7 @@ cat "${GXBASE}/templates/mosaic.tmpl" | sed -e "s:OBSLIST:${obslist}:g" \
                                       -e "s:DECPOINT:${dec}:g" \
                                       -e "s:BASEDIR:${base}:g" \
                                       -e "s:MOSAICDIR:${mosaicdir}:g" \
+                                      -e "s:SOURCECAT:${sourcecat}:g" \
                                       -e "s:FILTERED:${filtered}:g" \
                                       -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 

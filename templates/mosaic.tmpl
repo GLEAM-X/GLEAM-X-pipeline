@@ -10,6 +10,7 @@ ra=RAPOINT
 dec=DECPOINT
 mosaicdir=MOSAICDIR
 filtered=FILTERED
+sourcecat=SOURCECAT
 
 cd "${base}" || exit 1
 obss=($(sort $obslist))
@@ -266,8 +267,14 @@ if [[ ! -e "${outname}_ddmod.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
     # Generate a measured PSF map
     if [[ ! -e "${outname}_psf.fits" ]]
     then
-        singularity run ${GXCONTAINER} psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
-        singularity run ${GXCONTAINER} psf_create.py --input="${outname}_comp_psfcat.fits"
+        if [[ -z $sourcecat ]]
+        then 
+            singularity run ${GXCONTAINER} psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
+            singularity run ${GXCONTAINER} psf_create.py --input="${outname}_comp_psfcat.fits"
+        else 
+            singularity run ${GXCONTAINER} psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}" --nscat="${GXBASE}/models/${sourcecat}"
+            singularity run ${GXCONTAINER} psf_create.py --input="${outname}_comp_psfcat.fits"
+        fi
     fi
 
     # Run source-finding using the mosaicked PSF map as an input
@@ -279,8 +286,13 @@ if [[ ! -e "${outname}_ddmod.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
     # Select sources and generate a new PSF map that has the right blur factor
     if [[ ! -e "${outname}_projpsf_psf.fits" ]]
     then
-        singularity run ${GXCONTAINER} psf_select.py --input="${outname}_projpsf_comp.fits" --prefix "${low}-${high}"
-        singularity run ${GXCONTAINER} psf_create.py --input="${outname}_projpsf_comp_psfcat.fits"
+        if [[ -z $sourcecat ]]
+        then 
+            singularity run ${GXCONTAINER} psf_select.py --input="${outname}_projpsf_comp.fits" --prefix "${low}-${high}"
+            singularity run ${GXCONTAINER} psf_create.py --input="${outname}_projpsf_comp_psfcat.fits"
+        else 
+            singularity run ${GXCONTAINER} psf_select.py --input="${outname}_projpsf_comp.fits" --prefix "${low}-${high}" --nscat="${GXBASE}/models/${sourcecat}"
+            singularity run ${GXCONTAINER} psf_create.py --input="${outname}_projpsf_comp_psfcat.fits"
     fi
 
     # Multiply by blur factor
