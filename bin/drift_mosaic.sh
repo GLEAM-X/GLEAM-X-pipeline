@@ -30,7 +30,7 @@ mosaicdir=
 filtered=
 
 # parse args and set options
-while getopts ':td:p:o:r:e:m:n:f' OPTION
+while getopts ':td:p:o:r:e:m:s:f' OPTION
 do
     case "$OPTION" in
     d)
@@ -45,7 +45,7 @@ do
         dec=${OPTARG} ;;
     m) 
         mosaicdir=${OPTARG} ;;
-    n)
+    s)
         sourcecat=${OPTARG} ;;
     t)
         tst=1 ;;
