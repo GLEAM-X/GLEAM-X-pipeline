@@ -293,6 +293,7 @@ if [[ ! -e "${outname}_ddmod.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
         else 
             singularity run ${GXCONTAINER} psf_select.py --input="${outname}_projpsf_comp.fits" --prefix "${low}-${high}" --nscat="${GXBASE}/models/${sourcecat}"
             singularity run ${GXCONTAINER} psf_create.py --input="${outname}_projpsf_comp_psfcat.fits"
+        fi
     fi
 
     # Multiply by blur factor
