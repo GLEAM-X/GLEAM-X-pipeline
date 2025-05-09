@@ -4,6 +4,17 @@ set -x
 
 pipeuser=PIPEUSER
 obsnum=OBSNUM
+node=NODETYPE
+
+echo $GXCONTAINER 
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default GXCONTAINER"
+fi 
+
 
 # If obsnum is a file, then we are in an array job
 if [[ -f "${obsnum}" ]]
@@ -23,13 +34,13 @@ echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
 tempdir=${GXTEMP}/${jobid}_${taskid}/
 
-function test_fail {
-if [[ $1 != 0 ]]
-then
-    track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
-    exit "$1"
-fi
-}
+# function test_fail {
+# if [[ $1 != 0 ]]
+# then
+#     track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+#     exit "$1"
+# fi
+# }
 
 # Set version number
 base=BASEDIR
@@ -51,7 +62,7 @@ tsigma=1
 
 # Update database
 cd "${base}" || exit
-track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
+# track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
 
 datadir="${base}/${obsnum}"
 cd "${datadir}" || exit
@@ -82,10 +93,10 @@ elif [[ $obsnum -ge 1191580576 ]] ; then
 fi
 
 # Set up channel-dependent options
-chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
-bandwidth="$(pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
-centfreq="$(pyhead.py -p FREQCENT ${metafits} | awk '{print $3}')"
-chans="$(pyhead.py -p CHANNELS ${metafits} | awk '{print $3}' | sed 's/,/ /g')"
+chan="$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+bandwidth="$(singularity run $GXCONTAINER pyhead.py -p BANDWDTH ${metafits} | awk '{print $3}')"
+centfreq="$(singularity run $GXCONTAINER pyhead.py -p FREQCENT ${metafits} | awk '{print $3}')"
+chans="$(singularity run $GXCONTAINER pyhead.py -p CHANNELS ${metafits} | awk '{print $3}' | sed 's/,/ /g')"
 chans=($chans)
 
 # Pixel scale
@@ -110,14 +121,14 @@ multiscale="-multiscale -mgain 0.85 -multiscale-gain 0.15"
 
 
 # Checking if there is a gross sidelobe: 
-get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
+singularity run $GXCONTAINER get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
 if [[ $(cat ${obsnum}_beamlobes.txt | wc -l ) -eq 1 ]]
 then 
     ra_sidelobe=$(cat ${obsnum}_beamlobes.txt | awk '{print $2}')
     dec_sidelobe=$(cat ${obsnum}_beamlobes.txt | awk '{print $3}')
     fov_beam=$(cat ${obsnum}_beamlobes.txt | awk '{print $4}')
 
-    radec_lobe=$(dd_hms_dms.py ${ra_sidelobe} ${dec_sidelobe} -d "hms")
+    radec_lobe=$(singularity run $GXCONTAINER dd_hms_dms.py ${ra_sidelobe} ${dec_sidelobe} -d "hms")
     lobe_image_size=$(echo "1.2*${fov_beam}/${scale}" | bc -l)
     lobe_image_size=${lobe_image_size%.*}
 
@@ -126,15 +137,15 @@ else
     exit 0
 fi
 
-chgcentre "${tempdir}/${obsnum}.ms" ${radec_lobe}
+singularity run $GXCONTAINER chgcentre "${tempdir}/${obsnum}.ms" ${radec_lobe}
 
 # Initial shallow clean to populate the model column 
 # Set the pipefail so the test_fail does not test for tee
 set -o pipefail
 if [[ ! -e "${obsnum}_sidelobe-MFS-XX-image.fits" ]]
 then
-    taql alter table ${obsnum}.ms drop column MODEL_DATA
-    wsclean \
+    singularity run $GXCONTAINER -B ${tempdir} taql alter table ${obsnum}.ms drop column MODEL_DATA
+    singularity run $GXCONTAINER -B ${tempdir}/${obsnum}.ms:/input wsclean \
             -abs-mem ${GXMEMORY} \
             -temp-dir ${tempdir}/ \
             $multiscale \
@@ -156,10 +167,10 @@ fi
 
 if [[ -e "${obsnum}_sidelobe-MFS-XX-image.fits" ]]
 then
-    taql update ${tempdir}/${obsnum}.ms set ${datacolumn}=${datacolumn}-MODEL_DATA
+    singularity run -B ${tempdir} $GXCONTAINER taql update ${tempdir}/${obsnum}.ms set ${datacolumn}=${datacolumn}-MODEL_DATA
 # Also updating the model column to remove the model of the sidelobe so its not accidentally added later 
-    taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
-    rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
+    singularity run -B ${tempdir} $GXCONTAINER taql alter table ${tempdir}/${obsnum}.ms drop column MODEL_DATA
+    
 else 
     echo "There is no sidelobe image so I haven't subtracted anything because I'm not sure what's wrong" 
     rm -rf ${tempdir}/${obsnum}.ms
@@ -170,15 +181,16 @@ fi
 
 echo "Have subtracted the model column from the ${datacolumn}, now to change back to original pointing and cleanup"
 
-coords=$(calc_pointing.py "${metafits}")
-chgcentre \
-        "${obsnum}.ms" \
+coords=$(singularity run $GXCONTAINER calc_pointing.py "${metafits}")
+singularity run -B ${tempdir} $GXCONTAINER chgcentre \
+        "${tempdir}/${obsnum}.ms" \
         ${coords}
-chgcentre \
+singularity run -B ${tempdir} $GXCONTAINER chgcentre \
         -zenith \
         -shiftback \
-        "${obsnum}.ms"
+        "${tempdir}/${obsnum}.ms"
 
 
+rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
 
 track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"

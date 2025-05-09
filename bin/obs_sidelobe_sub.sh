@@ -2,11 +2,12 @@
 
 usage()
 {
-echo "obs_sidelobe_sub.sh [-d dep] [-p project] [-a account] [-z] [-t] obsnum
+echo "obs_sidelobe_sub.sh [-d dep] [-p project] [-a account] [-n nodetype] [-z] [-t] obsnum
   -d dep     : job number for dependency (afterok)
   -p project : project, (must be specified, no default)
   -z         : Debugging mode: image the CORRECTED_DATA column
                 instead of imaging the DATA column
+  -n node    : Node type for use in DUG
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
   obsnum     : the obsid to process, or a text file of obsids (newline separated). 
@@ -21,7 +22,7 @@ dep=
 tst=
 debug=
 # parse args and set options
-while getopts ':tzd:a:p:' OPTION
+while getopts ':tzd:a:n:p:' OPTION
 do
     case "$OPTION" in
 	d)
@@ -32,6 +33,9 @@ do
         ;;
     p)
         project=${OPTARG}
+        ;;
+    n) 
+        nodetype=${OPTARG}
         ;;
     z)
         debug=1
@@ -84,12 +88,32 @@ else
     jobarray=''
 fi
 
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
+
 # start the real program
 
 script="${GXSCRIPT}/sidelobe_sub_${obsnum}.sh"
 cat "${GXBASE}/templates/sidelobe_sub.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                  -e "s:BASEDIR:${base}:g" \
                                  -e "s:DEBUG:${debug}:g" \
+                                 -e "s:NODETYPE:${nodetype}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
 output="${GXLOG}/sidelobe_sub_${obsnum}.o%A"
@@ -104,11 +128,14 @@ fi
 chmod 755 "${script}"
 
 # sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > ${script}.sbatch
-echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
+# echo '#!/bin/bash' > ${script}.sbatch
+# echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
 
-sub="sbatch --begin=now+5minutes --export=ALL  --time=12:00:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${jobarray} ${depend} ${queue} ${script}.sbatch"
+GXNCPULINE="--ntasks-per-node=1 --cpus-per-task=15"
+
+
+sub="sbatch --begin=now+5minutes --export=ALL  --time=06:00:00 --mem=50G --output=${output} --error=${error}"
+sub="${sub} ${GXNCPULINE} ${account} ${jobarray} ${depend} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
