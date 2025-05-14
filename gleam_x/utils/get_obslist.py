@@ -5,12 +5,12 @@ from argparse import ArgumentParser
 
 mwa_tap_service = vo.dal.TAPService("http://vo.mwatelescope.org/mwa_asvo/tap")
 
-def get_obsids(date,chan=None):
+def get_obsids(date,calibration,chan=None):
 
     if chan is not None: 
-        results = mwa_tap_service.search(f"SELECT obs_id FROM mwa.observation WHERE projectid='G0008' AND starttime_utc >= '{date} 00:00:00' AND stoptime_utc < '{date} 23:59:59' AND dataqualityname = 'Good' AND center_channel_number = {chan}")
+        results = mwa_tap_service.search(f"SELECT obs_id FROM mwa.observation WHERE projectid='G0008' AND starttime_utc >= '{date} 00:00:00' AND stoptime_utc < '{date} 23:59:59' AND dataqualityname = 'Good' AND center_channel_number = {chan} AND calibration='{calibration}'")
     else:
-        results = mwa_tap_service.search(f"SELECT obs_id FROM mwa.observation WHERE projectid='G0008' AND starttime_utc >= '{date} 00:00:00' AND stoptime_utc < '{date} 23:59:59' AND dataqualityname = 'Good'")
+        results = mwa_tap_service.search(f"SELECT obs_id FROM mwa.observation WHERE projectid='G0008' AND starttime_utc >= '{date} 00:00:00' AND stoptime_utc < '{date} 23:59:59' AND dataqualityname = 'Good' AND calibration='{calibration}'")
 
     return results.to_table() 
 
@@ -44,12 +44,20 @@ if __name__ == "__main__":
         type=str,
         help="Out filename, text string assumed"
     )
+    parser.add_argument(
+        '--calibration',
+        default="No",
+        type=str,
+        choices=["Yes", "No"],
+        help="Do you wish to include the calibration observations? (Yes, No)"
+    )
     
     args = parser.parse_args()
     print(args)
     
     df = get_obsids(
         date=args.date,
+        calibration=args.calibration,
         chan=args.chan
     )
 
