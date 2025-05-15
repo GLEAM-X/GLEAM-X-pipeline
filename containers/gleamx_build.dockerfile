@@ -492,7 +492,7 @@ RUN git clone --depth 1 --branch=${BIRLI_BRANCH} https://github.com/MWATelescope
     cd / && \
     rm -rf /Birli ${CARGO_HOME}/registry
 
-ARG HYPERDRIVE_BRANCH=marlu0.13
+ARG HYPERDRIVE_BRANCH=marlu_v0.16.1
 RUN git clone --depth 1 --branch=${HYPERDRIVE_BRANCH} https://github.com/MWATelescope/mwa_hyperdrive.git /hyperdrive && \
     cd /hyperdrive && \
     cargo install --path . --locked && \
