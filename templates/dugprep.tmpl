@@ -124,7 +124,7 @@ do
         fi 
     else 
         cd $datadir
-        jobnum=$(singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready $obsnum | cut -d "|" -f 2 | tail -n +4  | head -n -1)
+        jobnum=($(singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready $obsnum | cut -d "|" -f 2 | tail -n +4  | head -n -1))
         if [[ -d $jobnum ]]
         then 
             mv $jobnum $basedir/$obsnum
