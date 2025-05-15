@@ -9,6 +9,7 @@ fres=FRES
 
 echo ${GXUSER}
 cd $basedir
+datadir="/data/curtin_gleam/asvo"
 
 # -----------------------------------------------------------------------------
 # LOAD MODULES
@@ -24,7 +25,16 @@ module load rclone
 
 if [[ -z ${asvo_flag} ]]
 then 
-    rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
+    # rclone copy -P --include "*.tar" ${GXACACIA}:${acacia}/ ${basedir}/
+    # IF YOU NEED TO ACTUALLY SUBMIT THE JOBS UNCOMMENT! 
+    export params="output=ms,flag_edge_width=80,avg_time_res=${tres},avg_freq_res=${fres}"
+    singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid submit-conv --parameters=$params -d acacia ${obslist}
+    
+    # get list of ready ones: 
+    singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready ${obslist} | cut -d "|" -f 3 | tail -n +4  | head -n -1 > ready_for_download.txt
+    list=()
+    list=$(cat "ready_for_download.txt")
+
 else
     # IF YOU NEED TO ACTUALLY SUBMIT THE JOBS UNCOMMENT! 
     export params="output=ms,flag_edge_width=80,avg_time_res=${tres},avg_freq_res=${fres}"
@@ -34,45 +44,50 @@ else
     singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready ${obslist} | cut -d "|" -f 3 | tail -n +4  | head -n -1 > ready_for_download.txt
     list=()
     list=$(cat "ready_for_download.txt")
-    for obs in $list
-    do
-        cd $basedir
-        obsfile=$(echo "${obs}_"[0-9]*".tar")
-        if [[ -d $obs ]]
-        then             
-            if [[ -e $obsfile ]]
-            then 
-                echo "already have tar for $obs not downloading again!" 
-                sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
-            elif [[ -d "$obs/$obs.ms" ]]
-            then 
-                echo "There's already a ms here! Not downloading for $obs" 
-                sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
-            fi
-        else 
-            if [[ -e $obsfile ]]
-            then 
-                echo "already have tar for $obs not downloading again!" 
-                sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
-            fi 
-        fi
-    done 
-
-    cd $basedir 
-    num_ready=$(cat "ready_for_download.txt" | wc -l)
-    echo "There are ${num_ready} obsids ready for download. Downloading with giant-squid now!" 
-
-    if [[ ${num_ready} == 0 ]]
-    then 
-        echo "There are no jobs ready, don't run the giant-squid or it will just download anything that's ready" 
-    else
-        # TO AVOID IT GETTING CONFUSED IF THERE ARE MUTLIPLE JOBS ASSOCIATED WITH THE OBSID
-        singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready ready_for_download.txt | cut -d "|" -f 2 | tail -n +4  | head -n -1 > ready_for_download_jobid.txt
-        # Download just the tar file and untar inside directory below
-        singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid download -k ready_for_download_jobid.txt 
-    fi 
-
 fi 
+for obs in $list
+do
+    cd $basedir
+    obsfile=$(echo "${obs}_"[0-9]*".tar")
+    if [[ -d $obs ]]
+    then             
+        if [[ -e $obsfile ]]
+        then 
+            echo "already have tar for $obs not downloading again!" 
+            sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
+        elif [[ -d "$obs/$obs.ms" ]]
+        then 
+            echo "There's already a ms here! Not downloading for $obs" 
+            sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
+        fi
+    else 
+        if [[ -e $obsfile ]]
+        then 
+            echo "already have tar for $obs not downloading again!" 
+            sed -i "/$obs/d" "${basedir}/ready_for_download.txt"
+        fi 
+    fi
+done 
+
+
+cd $basedir 
+num_ready=$(cat "ready_for_download.txt" | wc -l)
+echo "There are ${num_ready} obsids ready for download. Downloading with giant-squid now!" 
+
+if [[ ${num_ready} == 0 ]]
+then 
+    echo "There are no jobs ready, don't run the giant-squid or it will just download anything that's ready" 
+else
+    # TO AVOID IT GETTING CONFUSED IF THERE ARE MUTLIPLE JOBS ASSOCIATED WITH THE OBSID
+    singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready ready_for_download.txt | cut -d "|" -f 2 | tail -n +4  | head -n -1 > ready_for_download_jobid.txt
+    # Download just the tar file and untar inside directory below
+    if [[ -z ${asvo_flag} ]]
+    then 
+        singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid download -k ready_for_download_jobid.txt 
+    fi
+fi 
+
+
 
 # -----------------------------------------------------------------------------
 # UNTAR OBSIDS AND MAKE NICE DIRECTORY STRUCTURE
@@ -88,24 +103,42 @@ do
 
     obsfile=$(echo "${obsnum}_"[0-9]*"_ms.tar")
 
-
-    if [[ ! -d "${obsnum}" ]]
-    then
-        mkdir "${obsnum}"
-    fi
-
-    cd $obsnum
-    if [[ -d "${obsnum}.ms" ]]
-    then
-        echo "${obsnum}.ms already exists; please remove directory before running untar job."
-    else
-        mv "../${obsfile}" ./ 
-        tar xf "${obsfile}"
-        if [[ $? ]]
+    if [[ -z ${asvo_flag} ]]
+    then 
+        if [[ ! -d "${obsnum}" ]]
         then
-            rm "${obsfile}"
+            mkdir "${obsnum}"
         fi
+
+        cd $obsnum
+        if [[ -d "${obsnum}.ms" ]]
+        then
+            echo "${obsnum}.ms already exists; please remove directory before running untar job."
+        else
+            mv "../${obsfile}" ./ 
+            tar xf "${obsfile}"
+            if [[ $? ]]
+            then
+                rm "${obsfile}"
+            fi
+        fi 
+    else 
+        cd $datadir
+        jobnum=$(singularity run "${GXCONTAINERPATH}/gleamx_tools_x86-64.img" giant-squid list --states ready $obsnum | cut -d "|" -f 2 | tail -n +4  | head -n -1)
+        if [[ -d $jobnum ]]
+        then 
+            mv $jobnum $basedir/$obsnum
+        else
+            if [[ -d $basedir/$obsnum ]]
+            then 
+                echo "There's already a directory with that obsid in your basedir! Not moving.." 
+            else 
+                echo "There isn't a directory with that jobid! Something is wrong!"
+            fi 
+        fi 
+
     fi 
+
 
 done 
 
