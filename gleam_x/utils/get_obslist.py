@@ -2,6 +2,7 @@
 
 import pyvo as vo
 from argparse import ArgumentParser
+import pandas as pd
 
 mwa_tap_service = vo.dal.TAPService("http://vo.mwatelescope.org/mwa_asvo/tap")
 
@@ -12,10 +13,14 @@ def get_obsids(date,calibration,chan=None):
     else:
         results = mwa_tap_service.search(f"SELECT obs_id FROM mwa.observation WHERE projectid='G0008' AND starttime_utc >= '{date} 00:00:00' AND stoptime_utc < '{date} 23:59:59' AND dataqualityname = 'Good' AND calibration='{calibration}'")
 
-    return results.to_table() 
+    table = results.to_table() 
+    df = table.to_pandas(index=True)
+    df = df.sort_values(by=['obs_id'], ascending=True)
+
+    return df
 
 def create_obsids_txt(df, out):
-    df.write(out, format="ascii.no_header",overwrite=True)
+    df["obs_id"].to_csv(out, index=False, header=False)
     return 
 
 if __name__ == "__main__":
@@ -27,7 +32,7 @@ if __name__ == "__main__":
         "--date",
         default=None,
         type=str,
-        help="Obsids only on this specific date ar ereturned, date is expected YYYY-MM-DD",
+        help="Obsids only on this specific date are returned, date is expected YYYY-MM-DD",
     )
     parser.add_argument(
         '-c',
