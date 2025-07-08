@@ -178,10 +178,10 @@ set -o pipefail
 # shallow clean (for selfcal) 
 if [[ ! -e "${obsnum}_initial-MFS-XX-image.fits" ]]
 then
-    singularity run $GXCONTAINER wsclean \
-            -abs-mem ${GXMEMORY} \
+    singularity run -B ${tempdir}/${obsnum}.ms:/input -B ${tempdir}:/tmp $GXCONTAINER wsclean \
+            -abs-mem 60 \
             $multiscale \
-            -temp-dir ${tempdir}/ \
+            -temp-dir /tmp \
             -j ${SLURM_CPUS_PER_TASK} \
             -nwlayers 100 \
             -parallel-gridding ${SLURM_CPUS_PER_TASK} \
@@ -195,7 +195,7 @@ then
             -pol XX,YY,XY,YX \
             -channels-out 4 \
             -join-polarizations \
-            "${tempdir}/${obsnum}.ms" | tee wsclean.log
+            /input | tee wsclean.log
     
 else
     echo "Already have initial images, not reimaging shallow clean"
@@ -211,7 +211,7 @@ else
     rm -rf ${obsnum}.ms && cp -rf ${tempdir}/${obsnum}.ms ./
     singularity run $GXCONTAINER calibrate \
             -j ${SLURM_CPUS_PER_TASK} \
-            -absmem ${GXABSMEMORY} \
+            -absmem 60 \
             -minuv ${minuvm} \
             -maxuv ${maxuvm} \
             -datacolumn DATA \
