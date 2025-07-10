@@ -1,24 +1,8 @@
-#!/bin/sh
-#SBATCH --partition=copy
-#SBATCH -M=setonix 
-#SBATCH --time=48:00:00
-#SBATCH --job-name=download_nimbus_XG_D-55_20201020
-#SBATCH --output=${GXLOG}/download_nimbus_XG_D-55_20201020.o%A
-#SBATCH --error=${GXLOG}/download_nimbus_XG_D-55_20201020.e%A
-
-
-VMUSER=ubuntu
-VMADDR="146.118.68.233"
-VMPATH="/mnt/gxarchive/Archived_Obsids"
-SAVEPATH="/astro/mwasci/kross/gleamx/XG_D-55_4Night/20201020/"
-FILENAME="/astro/mwasci/kross/gleamx/XG_D-55_4Night/20201020/XG_D-55_20201020_redownload.txt"
+VMPATH="/data/Archived_Obsids/"
+SAVEPATH="/data/curtin_gleam/GX_D-26_20180525"
+FILENAME="/data/curtin_gleam/GX_D-26_20180525/GX_D-26_20180525.txt"
 
 DRYRUN=''
-
-echo "We will be downloading ionosphere data from"
-echo "  - USER: ${VMUSER}"
-echo "  - HOST: ${VMADDR}"
-echo "  - PATH: ${VMPATH}"
 
 echo """
 
@@ -33,10 +17,11 @@ readarray -t arr < ${FILENAME}
 
 for element in ${arr[@]}
     do
-        rsync -avh $DRYRUN --progress "${VMUSER}@${VMADDR}:${VMPATH}/${element}/*-image-pb_warp_rescaled.fits" "${SAVEPATH}/${element}/"
-        rsync -avh $DRYRUN --progress "${VMUSER}@${VMADDR}:${VMPATH}/${element}/*-image-pb_warp_rescaled_weight.fits" "${SAVEPATH}/${element}/"
-        rsync -avh $DRYRUN --progress "${VMUSER}@${VMADDR}:${VMPATH}/${element}/${element}_deep-MFS-image-pb_warp_rms.fits" "${SAVEPATH}/${element}/${element}_deep-MFS-image-pb_warp_rms.fits"
-        rsync -avh $DRYRUN --progress "${VMUSER}@${VMADDR}:${VMPATH}/${element}/${element}_deep-MFS-image-pb_warp_comp.fits" "${SAVEPATH}/${element}/${element}_deep-MFS-image-pb_warp_comp.fits"
+        rsync -avh $DRYRUN --progress "gleam-x-db:${VMPATH}/${element}/*-image-pb.fits" "${SAVEPATH}/${element}/"
+        rsync -avh $DRYRUN --progress "gleam-x-db:${VMPATH}/${element}/${element}_deep-MFS-image-pb_bkg.fits" "${SAVEPATH}/${element}/${element}_deep-MFS-image-pb_bkg.fits"
+        # rsync -avh $DRYRUN --progress "${VMUSER}@${VMADDR}:${VMPATH}/${element}/*-image-pb_warp_rescaled_weight.fits" "${SAVEPATH}/${element}/"
+        rsync -avh $DRYRUN --progress "gleam-x-db:${VMPATH}/${element}/${element}_deep-MFS-image-pb_rms.fits" "${SAVEPATH}/${element}/${element}_deep-MFS-image-pb_rms.fits"
+        rsync -avh $DRYRUN --progress "gleam-x-db:${VMPATH}/${element}/${element}_deep-MFS-image-pb_warp_comp.fits" "${SAVEPATH}/${element}/${element}_deep-MFS-image-pb_warp_comp.fits"
         wget -O ${element}.metafits http://ws.mwatelescope.org/metadata/fits?obs_id=${element}
             mv ${element}.metafits "${SAVEPATH}/${element}/${element}.metafits"
 done
