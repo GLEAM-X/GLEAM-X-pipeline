@@ -121,7 +121,7 @@ multiscale="-multiscale -mgain 0.85 -multiscale-gain 0.15"
 
 
 # Checking if there is a gross sidelobe: 
-singularity run $GXCONTAINER get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
+singularity run ${GXCONTAINERPATH}/gleamx_tools_knl.img get_mwa_pb_lobes.py ${metafits} -mS > ${obsnum}_beamlobes.txt
 if [[ $(cat ${obsnum}_beamlobes.txt | wc -l ) -eq 1 ]]
 then 
     ra_sidelobe=$(cat ${obsnum}_beamlobes.txt | awk '{print $2}')
