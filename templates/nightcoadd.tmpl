@@ -9,6 +9,17 @@ nightlist=NIGHTLIST
 ra=RAPOINT
 dec=DECPOINT
 mosaicdir=MOSAICDIR
+node=NODETYPE
+
+echo $GXCONTAINER 
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default GXCONTAINER"
+fi 
+
 
 if [[ -z ${mosaicdir} ]]
 then
@@ -86,9 +97,9 @@ do
             if [[ "${night}" == *"-27"* ]] || [[ "${night}" == *"-13"* ]] || [[ "${night}" == *"+3"* ]]
             then 
                 echo "Using the mask for weighting"
-                sigmoid_edge_weight.py --mask ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
+                singularity run $GXCONTAINER sigmoid_edge_weight.py --mask ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
             else
-                sigmoid_edge_weight.py ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
+                singularity run $GXCONTAINER singularity run $GXCONTAINER sigmoid_edge_weight.py ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
             fi 
             nightweight=$(ls "${night}"/*_"${freq}"_ddmod_weightmap.fits)
         fi
@@ -124,11 +135,11 @@ do
         echo "${nightrms}" >> "${tmp_rms}"
         echo "${nightpsf}" >> "${tmp_psfs}"
         
-        racen=$(pyhead.py -p CRVAL1 "${mosaicdir}/${nightimg}" | awk '{print $3}')
-        deccen=$(pyhead.py -p CRVAL2 "${mosaicdir}/${nightimg}" | awk '{print $3}')
+        racen=$(singularity run $GXCONTAINER pyhead.py -p CRVAL1 "${mosaicdir}/${nightimg}" | awk '{print $3}')
+        deccen=$(singularity run $GXCONTAINER pyhead.py -p CRVAL2 "${mosaicdir}/${nightimg}" | awk '{print $3}')
         
         # This is coming out to None. Revisit. 
-        mid=$(pyhead.py -p CRVAL3 "${mosaicdir}/${nightimg}" | awk '{print $3}')
+        mid=$(singularity run $GXCONTAINER pyhead.py -p CRVAL3 "${mosaicdir}/${nightimg}" | awk '{print $3}')
         
         # add obs that actually exist to list for later:
         used_nights+=("${night}")
@@ -186,7 +197,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
     mkdir "${resampdir}"
 
     echo "Generating resampled images for for ${nightlist} subband ${freq}."
-    swarp -c "${template}.resamp" @"${imagelist}.list"
+    singularity run $GXCONTAINER swarp -c "${template}.resamp" @"${imagelist}.list"
     # resampled images should now appear in ./resamp
 
     tmp_resamp=${imagelist}.list.resamp
@@ -220,15 +231,15 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
 
         # we will rename the coadd.fits / coadd.weight.fits afterwards
         echo "Generating mosaic ${outname}${extra}.fits for ${nightlist} subband ${freq}."
-        swarp -c "${template}${extra}.coadd" @"${imagelist}.list.resamp${extra}"
+        singularity run $GXCONTAINER swarp -c "${template}${extra}.coadd" @"${imagelist}.list.resamp${extra}"
 
         if [[ -e "${imageout}${extra}.fits" ]]
         then
             # will this ever trim something in one image but not in another? 
-            fits_trim.py "${imageout}${extra}.fits" "${outname}${extra}.fits"
+            singularity run $GXCONTAINER fits_trim.py "${imageout}${extra}.fits" "${outname}${extra}.fits"
             if [[ -e ${outname}${extra}.fits ]]
             then
-                pyhead.py -u FREQ "${mid}" "${outname}${extra}.fits"
+                singularity run $GXCONTAINER pyhead.py -u FREQ "${mid}" "${outname}${extra}.fits"
                 rm "${imageout}${extra}.fits"
             else
                 echo "Could not generate mosaic ${outname}${extra} for ${nightlist} subband ${freq}"
@@ -240,7 +251,7 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
         fi
     done 
 
-    psf_combine_nights.py \
+    singularity run $GXCONTAINER psf_combine_nights.py \
         --psf $(ls "${tmpimgdir}"/*"projpsf_psf.fits") \
         --rms $(ls "${tmpimgdir}"/*"rms.fits") \
         --output "${outname}_psfmap.fits"
@@ -265,22 +276,22 @@ fi
 
 # Blur correction and final PSF generation
 if [[ ! -e "${outname}_comp.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
-    BANE --noclobber --cores 1 "${outname}.fits"
+    singularity run $GXCONTAINER BANE --noclobber --cores 1 "${outname}.fits"
 
     # To create the final PSF map that I will use later, run source-finding without any PSF input
     if [[ ! -e "${outname}_comp.fits" ]]
     then
-        aegean --progress --cores=${GXNCPUS} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
+        singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
     fi
 
     # Generate a measured PSF map
     if [[ ! -e "${outname}_psf.fits" ]]
     then
-        psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
-        psf_create.py --input="${outname}_comp_psfcat.fits"
+        singularity run $GXCONTAINER psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
+        singularity run $GXCONTAINER psf_create.py --input="${outname}_comp_psfcat.fits"
     fi
 
-    aegean --progress --cores=${GXNCPUS} --seedclip=4 --maxsummits=5 --autoload --table="${outname}.fits" --psf="${outname}_psf.fits" "${outname}.fits"
+    singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=4 --maxsummits=5 --autoload --table="${outname}.fits" --psf="${outname}_psf.fits" "${outname}.fits"
 fi
 
 
@@ -294,7 +305,7 @@ if [[ ! -e "${outname}_rms.fits" ]] ; then
     # fi
 
     # Rerun source-finding on blur-corrected map with measured PSF map
-    BANE --noclobber --cores 1 "${outname}.fits"
+    singularity run $GXCONTAINER BANE --noclobber --cores 1 "${outname}.fits"
     # if [[ ! -e "${outname}_comp.fits" ]]
     # then
     #     aegean \
@@ -314,10 +325,10 @@ fi
 if [[ -e ${outname}.fits ]]
 then
     echo "Mosaic successful!"
-    track_task.py finish_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
+    # track_task.py finish_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
 else
     echo "Mosaic failed!"
-    track_task.py fail_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
+    # track_task.py fail_mosaic  --jobid="${jobid}" --taskid="${taskid}"  --finish_time="$(date +%s)"
     exit 1
 fi
 

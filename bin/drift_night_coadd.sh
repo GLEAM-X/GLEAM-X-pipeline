@@ -14,6 +14,7 @@ name was used.
                 and then return the submission command
   -r RA       : Right Ascension (decimal hours; default = guess from observation list)
   -e dec      : Declination (decimal degrees; default = guess from observation list)
+  -n node     : Node type for dug (default=GXNODETYPE)
   -m mosaicdir: Directory name for mosaics to be created (default = mosaics) 
   nightlist  : the list of nights with existing coadded images to process" 1>&2;
 exit 1;
@@ -23,14 +24,13 @@ pipeuser=$(whoami)
 
 #initial variables
 dep=
-queue="-p highmem"
 tst=
 ra=
 dec=
 mosaicdir=
-
+nodetype=
 # parse args and set options
-while getopts ':td:p:r:e:m:' OPTION
+while getopts ':td:p:r:e:m:n:' OPTION
 do
     case "$OPTION" in
     d)
@@ -41,6 +41,8 @@ do
         ra=${OPTARG} ;;
     e)
         dec=${OPTARG} ;;
+    n)
+        nodetype=${OPTARG} ;;
     m) 
         mosaicdir=${OPTARG} ;;
     t)
@@ -73,6 +75,31 @@ fi
 queue="-p ${GXSTANDARDQ}"
 base="${GXSCRATCH}/${project}"
 
+if [[ ! -z ${GXACCOUNT} ]]
+then
+    account="--account=${GXACCOUNT}"
+fi
+
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
+
+
 obss=($(sort "${nightlist}"))
 listbase=$(basename "${nightlist}")
 listbase=${listbase%%.*}
@@ -82,6 +109,7 @@ cat "${GXBASE}/templates/nightcoadd.tmpl" | sed -e "s:NIGHTLIST:${nightlist}:g" 
                                       -e "s:RAPOINT:${ra}:g" \
                                       -e "s:DECPOINT:${dec}:g" \
                                       -e "s:BASEDIR:${base}:g" \
+                                      -e "s:NODETYPE:${nodetype}:g" \
                                       -e "s:MOSAICDIR:${mosaicdir}:g" \
                                       -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
@@ -91,12 +119,12 @@ error="${GXLOG}/nightcoadd_${listbase}.e%A_%a"
 chmod 755 "${script}"
 
 # sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > "${script}.sbatch"
-echo "singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
+# echo '#!/bin/bash' > "${script}.sbatch"
+# echo "singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
 # Automatically runs a job array for each sub-band
 sub="sbatch  --begin=now --array=0-24  --export=ALL  --time=10:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${depend} ${queue} ${script}.sbatch"
+sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${partition} ${depend} ${queue} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
