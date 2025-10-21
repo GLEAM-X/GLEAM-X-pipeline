@@ -45,7 +45,7 @@ echo "taskid: ${taskid}"
 echo "subchan: ${freq}"
 
 # Define output mosaic name as the first part of the input text file
-baseoutname=$(echo ${nightlist} | cut -d "." -f1 | cut -d "_" -f-2)
+baseoutname=$(echo ${nightlist} | cut -d "." -f1)
 outname="${baseoutname}_${freq}"
 
 for image in "" "_weights"; do 
@@ -99,7 +99,7 @@ do
                 echo "Using the mask for weighting"
                 singularity run $GXCONTAINER sigmoid_edge_weight.py --mask ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
             else
-                singularity run $GXCONTAINER singularity run $GXCONTAINER sigmoid_edge_weight.py ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
+                singularity run $GXCONTAINER sigmoid_edge_weight.py ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
             fi 
             nightweight=$(ls "${night}"/*_"${freq}"_ddmod_weightmap.fits)
         fi

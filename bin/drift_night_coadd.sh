@@ -123,7 +123,7 @@ chmod 755 "${script}"
 # echo "singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
 # Automatically runs a job array for each sub-band
-sub="sbatch  --begin=now --array=0-24  --export=ALL  --time=10:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
+sub="sbatch  --begin=now --array=0-24  --export=ALL  --time=10:00:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
 sub="${sub} ${GXNCPULINE} ${GXTASKLINE} ${partition} ${depend} ${queue} ${script}"
 if [[ ! -z ${tst} ]]
 then
