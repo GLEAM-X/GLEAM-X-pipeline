@@ -1,0 +1,49 @@
+#! /bin/bash -l
+
+pipeuser=PIPEUSER
+
+set -x
+
+base=BASEDIR
+nightlist=NIGHTLIST
+ra=RAPOINT
+dec=DECPOINT
+mosaicdir=MOSAICDIR
+node=NODETYPE
+
+echo $GXCONTAINER 
+if [[ ! -z ${node} ]]
+then 
+    export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${node}.img"
+    echo ${GXCONTAINER}
+else
+    echo "Just using default GXCONTAINER"
+fi 
+
+
+if [[ -z ${mosaicdir} ]]
+then
+    mosaicdir='mosaic'
+fi
+
+cd "${base}" || exit 1
+nights=($(sort "${nightlist}"))
+
+echo "Nights listed are ${nights[@]}"
+
+taskid=${SLURM_ARRAY_TASK_ID}
+jobid=${SLURM_ARRAY_JOB_ID}
+
+freqs=(072-080MHz 072-103MHz 080-088MHz 088-095MHz 095-103MHz 103-111MHz 103-134MHz 111-118MHz
+118-126MHz 126-134MHz 139-147MHz 139-170MHz 147-154MHz 154-162MHz 162-170MHz 170-177MHz
+170-200MHz 177-185MHz 185-193MHz 193-200MHz 200-208MHz 200-231MHz 208-216MHz 216-223MHz
+223-231MHz)
+freq=${freqs[$SLURM_ARRAY_TASK_ID]}
+
+echo "jobid: ${jobid}"
+echo "taskid: ${taskid}"
+echo "subchan: ${freq}"
+
+for night in "${nights[@]}"
+do 
+    cd ${night}
