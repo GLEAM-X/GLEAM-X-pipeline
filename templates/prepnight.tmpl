@@ -42,12 +42,12 @@ do
     imname="${night}_${freq}" 
     if [[ ! -e "${night}_${freq}_ddmod_rms.fits" ]]
     then 
-        singularity run ${GXCONTAINER} BANE --cores ${SLURM_CPUS_PER_TASK} "${imname}_ddmod.fits" 
+        singularity run ${GXCONTAINER} BANE --cores 1 "${imname}_ddmod.fits" 
     else 
         echo "RMS file ${night}_${freq}_ddmod_rms.fits already exists, skipping BANE"
     fi
 
-    if [[ ! -e "${night}_${freq}_ddmod_weight.fits" ]]
+    if [[ ! -e "${night}_${freq}_ddmod_weightmap.fits" ]]
     then 
         singularity run ${GXCONTAINER} sigmoid_edge_weight.py --mask "${imname}_ddmod.fits" "${imname}_ddmod_rms.fits" "${night}_${freq}_ddmod_weightmap.fits"
     else 
