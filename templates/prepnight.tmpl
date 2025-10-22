@@ -49,7 +49,7 @@ do
 
     if [[ ! -e "${night}_${freq}_ddmod_weight.fits" ]]
     then 
-        singularity run ${GXCONTAINER} sigmoid_edge_weight.py --mask ${nightimg} ${nightrms} "${night}_${freq}_ddmod_weightmap.fits"
+        singularity run ${GXCONTAINER} sigmoid_edge_weight.py --mask "${imname}_ddmod.fits" "${imname}_ddmod_rms.fits" "${night}_${freq}_ddmod_weightmap.fits"
     else 
         echo "Weight image ${night}_${freq}_ddmod_weight.fits already exists, skipping weight image creation"
     fi
