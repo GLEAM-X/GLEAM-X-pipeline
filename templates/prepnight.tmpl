@@ -6,9 +6,6 @@ set -x
 
 base=BASEDIR
 nightlist=NIGHTLIST
-ra=RAPOINT
-dec=DECPOINT
-mosaicdir=MOSAICDIR
 node=NODETYPE
 
 echo $GXCONTAINER 
@@ -20,11 +17,6 @@ else
     echo "Just using default GXCONTAINER"
 fi 
 
-
-if [[ -z ${mosaicdir} ]]
-then
-    mosaicdir='mosaic'
-fi
 
 cd "${base}" || exit 1
 nights=($(sort "${nightlist}"))
@@ -47,3 +39,22 @@ echo "subchan: ${freq}"
 for night in "${nights[@]}"
 do 
     cd ${night}
+    imname="${night}_${freq}" 
+    if [[ ! -e "${night}_${freq}_ddmod_rms.fits" ]]
+    then 
+        singularity run ${GXCONTAINER} BANE --cores ${SLURM_CPUS_PER_TASK} "${imname}_ddmod.fits" 
+    else 
+        echo "RMS file ${night}_${freq}_ddmod_rms.fits already exists, skipping BANE"
+    fi
+
+    if [[ ! -e "${night}_${freq}_ddmod_weight.fits" ]]
+    then 
+        singularity run ${GXCONTAINER} sigmoid_edge_weight.py --mask ${nightimg} ${nightrms} "${night}_${freq}_ddmod_weightmap.fits"
+    else 
+        echo "Weight image ${night}_${freq}_ddmod_weight.fits already exists, skipping weight image creation"
+    fi
+
+    cd ../
+    echo "Finished prep for ${night} at ${freq}"
+done 
+
