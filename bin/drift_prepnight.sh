@@ -93,7 +93,7 @@ listbase=$(basename "${nightlist}")
 listbase=${listbase%%.*}
 script="${GXSCRIPT}/prepnight_${listbase}.sh"
 
-cat "${GXBASE}/templates/nightcoadd.tmpl" | sed -e "s:NIGHTLIST:${nightlist}:g" \
+cat "${GXBASE}/templates/prepnight.tmpl" | sed -e "s:NIGHTLIST:${nightlist}:g" \
                                       -e "s:BASEDIR:${base}:g" \
                                       -e "s:NODETYPE:${nodetype}:g" \
                                       -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
