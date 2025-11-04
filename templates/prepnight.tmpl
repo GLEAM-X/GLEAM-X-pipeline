@@ -51,7 +51,7 @@ do
     then 
         singularity run ${GXCONTAINER} sigmoid_edge_weight.py --mask "${imname}_ddmod.fits" "${imname}_ddmod_rms.fits" "${night}_${freq}_ddmod_weightmap.fits"
     else 
-        echo "Weight image ${night}_${freq}_ddmod_weight.fits already exists, skipping weight image creation"
+        echo "Weight image ${night}_${freq}_ddmod_weightmap.fits already exists, skipping weight image creation"
     fi
 
     cd ${base}

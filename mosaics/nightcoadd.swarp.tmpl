@@ -33,7 +33,7 @@ PROJECTION_ERR         0.01           # Maximum projection error (in output
 CENTER_TYPE            MANUAL             # MANUAL, ALL or MOST
 CENTER                 RACENT, DECENT # Coordinates of the image center
 PIXELSCALE_TYPE        MEDIAN          # MANUAL,FIT,MIN,MAX or MEDIAN
-IMAGE_SIZE             60000, 50000   # Image size (0 = AUTOMATIC)
+IMAGE_SIZE             65000, 80000   # Image size (0 = AUTOMATIC)
  
 #-------------------------------- Resampling ----------------------------------
  
@@ -75,11 +75,11 @@ BACK_FILTERSIZE        3               # Background map filter range (meshes)
 #------------------------------ Memory management -----------------------------
  
 VMEM_DIR               .               # Directory path for swap files
-VMEM_MAX               2047            # Maximum amount of virtual memory (MB)
+VMEM_MAX               4095            # Maximum amount of virtual memory (MB)
 #MEM_MAX                1024             # Maximum amount of usable RAM (MB)
-COMBINE_BUFSIZE        1024              # RAM dedicated to co-addition(MB)
+COMBINE_BUFSIZE        2048              # RAM dedicated to co-addition(MB)
 #VMEM_MAX               32768            # Maximum amount of virtual memory (MB)
-MEM_MAX                32768             # Maximum amount of usable RAM (MB)
+MEM_MAX                7500             # Maximum amount of usable RAM (MB)
 #COMBINE_BUFSIZE        32768              # RAM dedicated to co-addition(MB)
  
 #------------------------------ Miscellaneous ---------------------------------

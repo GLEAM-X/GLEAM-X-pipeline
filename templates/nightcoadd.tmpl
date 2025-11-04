@@ -274,53 +274,53 @@ else
 fi
 
 
-# Blur correction and final PSF generation
-if [[ ! -e "${outname}_comp.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
-    singularity run $GXCONTAINER BANE --noclobber --cores 1 "${outname}.fits"
+# # Blur correction and final PSF generation
+# if [[ ! -e "${outname}_comp.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
+#     singularity run $GXCONTAINER BANE --noclobber --cores 1 "${outname}.fits"
 
-    # To create the final PSF map that I will use later, run source-finding without any PSF input
-    if [[ ! -e "${outname}_comp.fits" ]]
-    then
-        singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
-    fi
+#     # To create the final PSF map that I will use later, run source-finding without any PSF input
+#     if [[ ! -e "${outname}_comp.fits" ]]
+#     then
+#         singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
+#     fi
 
-    # Generate a measured PSF map
-    if [[ ! -e "${outname}_psf.fits" ]]
-    then
-        singularity run $GXCONTAINER psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
-        singularity run $GXCONTAINER psf_create.py --input="${outname}_comp_psfcat.fits"
-    fi
+#     # Generate a measured PSF map
+#     if [[ ! -e "${outname}_psf.fits" ]]
+#     then
+#         singularity run $GXCONTAINER psf_select.py --input="${outname}_comp.fits" --prefix="${low}-${high}"
+#         singularity run $GXCONTAINER psf_create.py --input="${outname}_comp_psfcat.fits"
+#     fi
 
-    singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=4 --maxsummits=5 --autoload --table="${outname}.fits" --psf="${outname}_psf.fits" "${outname}.fits"
-fi
+#     singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=4 --maxsummits=5 --autoload --table="${outname}.fits" --psf="${outname}_psf.fits" "${outname}.fits"
+# fi
 
 
-# Blur correction and final PSF generation
-if [[ ! -e "${outname}_rms.fits" ]] ; then
+# # Blur correction and final PSF generation
+# if [[ ! -e "${outname}_rms.fits" ]] ; then
 
-    # # Multiply by blur factor
-    # if [[ ! -e "${outname}_ddmod.fits" ]]
-    # then
-    #     dd_flux_mod.py "${outname}.fits" "${outname}_psfmap.fits" "${outname}_combined_ddmod.fits"
-    # fi
+#     # # Multiply by blur factor
+#     # if [[ ! -e "${outname}_ddmod.fits" ]]
+#     # then
+#     #     dd_flux_mod.py "${outname}.fits" "${outname}_psfmap.fits" "${outname}_combined_ddmod.fits"
+#     # fi
 
-    # Rerun source-finding on blur-corrected map with measured PSF map
-    singularity run $GXCONTAINER BANE --noclobber --cores 1 "${outname}.fits"
-    # if [[ ! -e "${outname}_comp.fits" ]]
-    # then
-    #     aegean \
-    #     --cores=${GXNCPUS} \
-    #     --seedclip=4 \
-    #     --maxsummits=5 \
-    #     --autoload \
-    #     --table="${outname}.fits" \
-    #     --psf="${outname}_psfmap.fits" \
-    #     "${outname}.fits"
-    # fi
-    # TODO: clean up intermediate files
-else
-    echo "Mosaic ${outname}.fits for ${obslist} subband $subchan already created."
-fi
+#     # Rerun source-finding on blur-corrected map with measured PSF map
+#     singularity run $GXCONTAINER BANE --noclobber --cores 1 "${outname}.fits"
+#     # if [[ ! -e "${outname}_comp.fits" ]]
+#     # then
+#     #     aegean \
+#     #     --cores=${GXNCPUS} \
+#     #     --seedclip=4 \
+#     #     --maxsummits=5 \
+#     #     --autoload \
+#     #     --table="${outname}.fits" \
+#     #     --psf="${outname}_psfmap.fits" \
+#     #     "${outname}.fits"
+#     # fi
+#     # TODO: clean up intermediate files
+# else
+#     echo "Mosaic ${outname}.fits for ${obslist} subband $subchan already created."
+# fi
 
 if [[ -e ${outname}.fits ]]
 then
