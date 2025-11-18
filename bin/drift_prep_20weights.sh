@@ -52,7 +52,7 @@ nightname=$1
 
 # if obslist is not specified or an empty file then just print help
 
-if [[ -z ${nightname} ]] || [[ ! -s ${nightname} ]] || [[ ! -e ${nightname} ]] || [[ -z $project ]]
+if [[ -z ${nightname} ]] || [[ -z $project ]]
 then
     usage
 fi
@@ -100,6 +100,8 @@ script="${GXSCRIPT}/plus20_weightmap_${listbase}.sh"
 
 cat "${GXBASE}/templates/plus20_weightmaps.tmpl" | sed -e "s:NIGHTNAME:${nightname}:g" \
                                       -e "s:BASEDIR:${base}:g" \
+                                      -e "s:RAMIN:${ra_min}:g" \
+                                      -e "s:RAMAX:${ra_max}:g" \
                                       -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
 output="${GXLOG}/plus20_weightmap_${listbase}.o%A_%a"
