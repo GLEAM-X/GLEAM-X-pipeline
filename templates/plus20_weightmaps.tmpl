@@ -19,7 +19,7 @@ freqs=(072-080MHz 072-103MHz 080-088MHz 088-095MHz 095-103MHz 103-111MHz 103-134
 223-231MHz)
 freq=${freqs[$SLURM_ARRAY_TASK_ID]}
 
-singularity run $GXCONTAINER $GXBASE/gleam_x/bin/make_ra_regions.py --mask --ra_min ${ra_min} --ra_max ${ra_max} GX_D+20_DRIII_${freq}_ddmod.fits GX_D+20_DRIII_${freq}_ddmod_rms.fits GX_D+20_DRIII_${freq}_ddmod_HerA_weightmap.fits 
+singularity run $GXCONTAINER $GXBASE/gleam_x/bin/mask_ra_regions.py --mask --ra_min ${ra_min} --ra_max ${ra_max} GX_D+20_DRIII_${freq}_ddmod.fits GX_D+20_DRIII_${freq}_ddmod_rms.fits GX_D+20_DRIII_${freq}_ddmod_HerA_weightmap.fits 
 
 
 if [[ -e "GX_D+20_DRIII_${freq}_ddmod_HerA_weightmap.fits" ]]
