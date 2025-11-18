@@ -299,18 +299,20 @@ if __name__ == "__main__":
         help="Maximum RA to keep in degrees",
     )
     args = parser.parse_args()
+    
+    imbase = args.infits.replace(".fits","")
+    print(imbase)
 
 
-
-    make_ra_region(args.infits, "temp_ra_masked.fits", ra_min=args.ra_min, ra_max=args.ra_max)
+    make_ra_region(args.infits, f"{imbase}_ramask.fits", ra_min=args.ra_min, ra_max=args.ra_max)
     print("Masked main image with RA limits")
-    make_ra_region(args.rmsfits, "temp_rms_ra_masked.fits", ra_min=args.ra_min, ra_max=args.ra_max)
+    make_ra_region(args.rmsfits, f"{imbase}_rms_ramask.fits", ra_min=args.ra_min, ra_max=args.ra_max)
     print("Masked RMS image with RA limits")
     
-    trim("temp_ra_masked.fits", args.outfits)
-    trim("temp_rms_ra_masked.fits", "temp_rms_ra_masked.fits")
+    trim(f"{imbase}_ramask.fits", args.outfits)
+    trim(f"{imbase}_rms_ramask.fits", f"{imbase}_rms_ramask.fits")
     ddd = create_sigweight(args.outfits)
     fits.writeto(args.outfits, ddd, overwrite=True)
 
-    weightmap = create_weightmap(ddd, "temp_rms_ra_masked.fits")
+    weightmap = create_weightmap(ddd, f"{imbase}_rms_ramask.fits")
     fits.writeto(args.outfits, weightmap, overwrite=True)
