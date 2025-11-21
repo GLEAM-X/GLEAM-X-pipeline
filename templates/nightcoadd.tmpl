@@ -88,8 +88,7 @@ do
     nightweight=$(ls "${night}"/*_"${freq}"_ddmod_weightmap.fits)
     # nightpsf=$(ls "${night}"/*_"${freq}"_projpsf_psf.fits)
 
-    if [[ -e "${nightimg}" ]] && \
-       [[ -e "${nightrms}" ]]
+    if [[ -e "${nightimg}" ]]
     #    [[ -e "${nightpsf}" ]]
     then
         if [[ ! -f "${nightweight}" ]]
