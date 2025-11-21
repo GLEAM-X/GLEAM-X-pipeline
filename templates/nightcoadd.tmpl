@@ -84,13 +84,13 @@ for night in "${nights[@]}"
 do
     # TODO: The psf for the deep coadd is called ddmod_projpsf_psf so heads up, will need to change if we're doing swarp of the projpsf 
     nightimg=$(ls "${night}"/*_"${freq}"_ddmod.fits)
-    nightrms=$(ls "${night}"/*_"${freq}"_ddmod_rms.fits)
+    # nightrms=$(ls "${night}"/*_"${freq}"_ddmod_rms.fits)
     nightweight=$(ls "${night}"/*_"${freq}"_ddmod_weightmap.fits)
-    nightpsf=$(ls "${night}"/*_"${freq}"_projpsf_psf.fits)
+    # nightpsf=$(ls "${night}"/*_"${freq}"_projpsf_psf.fits)
 
     if [[ -e "${nightimg}" ]] && \
-       [[ -e "${nightrms}" ]] && \
-       [[ -e "${nightpsf}" ]]
+       [[ -e "${nightrms}" ]]
+    #    [[ -e "${nightpsf}" ]]
     then
         if [[ ! -f "${nightweight}" ]]
         then 
@@ -113,27 +113,27 @@ do
         cp "${nightimg}" "${mosaicdir}/${tmpimgdir}/${name}"
         nightimg="${tmpimgdir}/${name}"
         
-        name=$(echo "${nightrms}" | sed -e "s|\(.*\)/|${uid}_coadd_|")
-        echo "Copying ${nightrms} to ${name}"
-        cp "${nightrms}" "${mosaicdir}/${tmpimgdir}/${name}"
-        nightrms="${tmpimgdir}/${name}"
+        # name=$(echo "${nightrms}" | sed -e "s|\(.*\)/|${uid}_coadd_|")
+        # echo "Copying ${nightrms} to ${name}"
+        # cp "${nightrms}" "${mosaicdir}/${tmpimgdir}/${name}"
+        # nightrms="${tmpimgdir}/${name}"
 
         name=$(echo "${nightweight}" | sed -e "s|\(.*\)/|${uid}_coadd_|")
         echo "Copying ${nightweight} to ${name}"
         cp "${nightweight}" "${mosaicdir}/${tmpimgdir}/${name}"
         nightweight="${tmpimgdir}/${name}"
         
-        name=$(echo "${nightpsf}" | sed -e "s|\(.*\)/|${uid}_coadd_|")
-        echo "Copying ${nightpsf} to ${name}"
-        cp "${nightpsf}" "${mosaicdir}/${tmpimgdir}/${name}"
-        nightpsf="${tmpimgdir}/${name}"
+        # name=$(echo "${nightpsf}" | sed -e "s|\(.*\)/|${uid}_coadd_|")
+        # echo "Copying ${nightpsf} to ${name}"
+        # cp "${nightpsf}" "${mosaicdir}/${tmpimgdir}/${name}"
+        # nightpsf="${tmpimgdir}/${name}"
         
         ((uid=uid+1))
 
         echo "${nightimg}" >> "${tmp}"
         echo "${nightweight}" >> "${tmp_weights}"
-        echo "${nightrms}" >> "${tmp_rms}"
-        echo "${nightpsf}" >> "${tmp_psfs}"
+        # echo "${nightrms}" >> "${tmp_rms}"
+        # echo "${nightpsf}" >> "${tmp_psfs}"
         
         racen=$(singularity run $GXCONTAINER pyhead.py -p CRVAL1 "${mosaicdir}/${nightimg}" | awk '{print $3}')
         deccen=$(singularity run $GXCONTAINER pyhead.py -p CRVAL2 "${mosaicdir}/${nightimg}" | awk '{print $3}')
@@ -174,8 +174,8 @@ echo "night mosaic centered at: ${ra}, ${dec}"
 # Move the temporary image list to the mosaic directory and rename
 mv "$tmp" "${mosaicdir}/${imagelist}.list"
 mv "$tmp_weights" "${mosaicdir}/${imagelist}.weights.list"
-mv "$tmp_rms" "${mosaicdir}/${imagelist}.rms.list"
-mv "$tmp_psfs" "${mosaicdir}/${imagelist}.projpsfs.list"
+# mv "$tmp_rms" "${mosaicdir}/${imagelist}.rms.list"
+# mv "$tmp_psfs" "${mosaicdir}/${imagelist}.projpsfs.list"
 
 cd "${mosaicdir}" || exit 1
 
@@ -201,9 +201,9 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
     # resampled images should now appear in ./resamp
 
     tmp_resamp=${imagelist}.list.resamp
-    tmp_bmaj=${tmp_resamp}_bmaj
-    tmp_bmin=${tmp_resamp}_bmin
-    tmp_bpa=${tmp_resamp}_bpa
+    # tmp_bmaj=${tmp_resamp}_bmaj
+    # tmp_bmin=${tmp_resamp}_bmin
+    # tmp_bpa=${tmp_resamp}_bpa
     tmp_weights=${imagelist}.weights.list.resamp
 
     for origfile in $(ls ${tmpimgdir}/*ddmod.fits); do
@@ -251,10 +251,10 @@ if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
         fi
     done 
 
-    singularity run $GXCONTAINER psf_combine_nights.py \
-        --psf $(ls "${tmpimgdir}"/*"projpsf_psf.fits") \
-        --rms $(ls "${tmpimgdir}"/*"rms.fits") \
-        --output "${outname}_psfmap.fits"
+    # singularity run $GXCONTAINER psf_combine_nights.py \
+    #     --psf $(ls "${tmpimgdir}"/*"projpsf_psf.fits") \
+    #     --rms $(ls "${tmpimgdir}"/*"rms.fits") \
+    #     --output "${outname}_psfmap.fits"
         
     # make PSF map and remove BMAJ, BMIN, BPA maps
     # psf_combine_axes.py "${outname}_bmaj.fits" \
