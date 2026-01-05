@@ -84,13 +84,25 @@ for night in "${nights[@]}"
 do
     # TODO: The psf for the deep coadd is called ddmod_projpsf_psf so heads up, will need to change if we're doing swarp of the projpsf 
     nightimg=$(ls "${night}"/*_"${freq}"_ddmod.fits)
-    # nightrms=$(ls "${night}"/*_"${freq}"_ddmod_rms.fits)
+    nightrms=$(ls "${night}"/*_"${freq}"_ddmod_rms.fits)
     nightweight=$(ls "${night}"/*_"${freq}"_ddmod_weightmap.fits)
     # nightpsf=$(ls "${night}"/*_"${freq}"_projpsf_psf.fits)
 
     if [[ -e "${nightimg}" ]]
     #    [[ -e "${nightpsf}" ]]
     then
+        if [[ ! -f "${nightrms}" ]]
+        then
+            echo "Generating the rms map for weighting"
+            cd ${night}
+            singularity run $GXCONTAINER BANE --noclobber --cores 1 "${night}_${freq}_ddmod.fits"
+            cd ${base}
+            nightrms=$(ls "${night}"/*_"${freq}"_ddmod_rms.fits)
+        else 
+            echo "RMS map for ${night} subband ${freq} already exists."
+            nightrms=$(ls "${night}"/*_"${freq}"_ddmod_rms.fits)
+        fi
+
         if [[ ! -f "${nightweight}" ]]
         then 
             if [[ "${night}" == *"-27"* ]] || [[ "${night}" == *"-13"* ]] || [[ "${night}" == *"+3"* ]]
@@ -100,6 +112,9 @@ do
             else
                 singularity run $GXCONTAINER sigmoid_edge_weight.py ${nightimg} ${nightrms} "${night}/${night}_${freq}_ddmod_weightmap.fits"
             fi 
+            nightweight=$(ls "${night}"/*_"${freq}"_ddmod_weightmap.fits)
+        else 
+            echo "Weight map for ${night} subband ${freq} already exists."
             nightweight=$(ls "${night}"/*_"${freq}"_ddmod_weightmap.fits)
         fi
         # symlink to include a unique name in the filename, as night created from
@@ -273,7 +288,7 @@ else
 fi
 
 
-# # Blur correction and final PSF generation
+# Blur correction and final PSF generation
 # if [[ ! -e "${outname}_comp.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
 #     singularity run $GXCONTAINER BANE --noclobber --cores 1 "${outname}.fits"
 
