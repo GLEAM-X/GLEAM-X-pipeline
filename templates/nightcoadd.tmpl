@@ -202,7 +202,7 @@ cat "${GXBASE}"/mosaics/nightresamp.swarp.tmpl \
     | sed "s;RACENT;${ra};" \
     | sed "s;DECENT;${dec};" > "${template}.resamp"
 
-if [[ ! -e ${outname}.fits ]] || [[ ! -e ${outname}_psfmap.fits ]]; then
+if [[ ! -e ${outname}.fits ]]; then
 
     if [ -e "${resampdir}" ]; then
         rm -r "${resampdir}"
