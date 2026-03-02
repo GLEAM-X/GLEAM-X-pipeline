@@ -62,13 +62,13 @@ fi
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
 
-function test_fail {
-    if [[ $1 != 0 ]]
-    then
-        track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
-        exit "$1"
-    fi
-}
+# function test_fail {
+#     if [[ $1 != 0 ]]
+#     then
+#         track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
+#         exit "$1"
+#     fi
+# }
 
 # Deleting the miriad files from previous rounds in case so that miriad doesn't freak out and crash
 # find . -iname "*.mir" -type d -exec rm -rf {} +
@@ -79,12 +79,12 @@ combined_im="${mosaicnm}_${combined_freq}"
 
 if [[ -z $ra ]]
 then 
-    ra=$(pyhead.py -p CRVAL1 "${highres_im}.fits" | awk '{print $3}')
+    ra=$(singularity run $GXCONTAINER pyhead.py -p CRVAL1 "${highres_im}.fits" | awk '{print $3}')
 fi
 
 if [[ -z $dec ]]
 then 
-    dec=$(pyhead.py -p CRVAL2 "${highres_im}.fits" | awk '{print $3}')
+    dec=$(singularity run $GXCONTAINER pyhead.py -p CRVAL2 "${highres_im}.fits" | awk '{print $3}')
 fi
 
 echo "Centre point: ${ra},${dec}"
@@ -138,12 +138,12 @@ then
         | sed "s;RACENT;${ra};" \
         | sed "s;DECENT;${dec};" > ${template}.resamp 
 
-    swarp -c "${template}.resamp" @"${imagelist}"
+    singularity run $GXCONTAINER swarp -c "${template}.resamp" @"${imagelist}"
 fi
 
 if [[ ! -e "${combined_im}.fits" ]]
 then
-    fits_trim.py "${combined_im}_temp.fits" "${combined_im}.fits"
+    singularity run $GXCONTAINER fits_trim.py "${combined_im}_temp.fits" "${combined_im}.fits"
 # UNCOMMENT IF NIGHT SPECIFIC 
     # lowpsf="${mosaicnm}_${lowres_freq}_projpsf_psf"
     # highpsf="${mosaicnm}_${highres_freq}_projpsf_psf"
@@ -210,15 +210,16 @@ fi
 # Blur correction and final PSF generation
 if [[ ! -e "${combined_im}_comp.fits" ]]
     then 
-    BANE \
-    --cores 1 \
+    singularity run $GXCONTAINERPATH/aegeancontainer.img BANE \
+    --cores=${SLURM_CPUS_PER_TASK} \
     --compress \
     --noclobber \
     "${combined_im}.fits"
 
     if [[ ! -e "${combined_im}_projpsf_comp.fits" ]]
     then 
-        aegean \
+        singularity run $GXCONTAINER aegean \
+        --cores=${SLURM_CPUS_PER_TASK} \
         --seedclip=10 \
         --maxsummits=5 \
         --progress \
@@ -229,11 +230,12 @@ if [[ ! -e "${combined_im}_comp.fits" ]]
 
     if [[ ! -e "${combined_im}_projpsf_psf.fits" ]]
     then 
-        psf_select.py --input="${combined_im}_projpsf_comp.fits" --prefix="${low}-${high}" --nscat="${GXBASE}/models/${sourcecat}"
-        psf_create.py --input="${combined_im}_projpsf_comp_psfcat.fits"
+        singularity run $GXCONTAINER psf_select.py --input="${combined_im}_projpsf_comp.fits" --prefix="${low}-${high}" --nscat="${GXBASE}/models/${sourcecat}"
+        singularity run $GXCONTAINER psf_create.py --input="${combined_im}_projpsf_comp_psfcat.fits"
     fi
 
-    aegean \
+    singularity run $GXCONTAINER aegean \
+    --cores=${SLURM_CPUS_PER_TASK} \
     --seedclip=4 \
     --maxsummits=5 \
     --autoload \
@@ -248,7 +250,7 @@ fi
 
 # SO THE PRIORIZED CAT SHOULD BE: "${combined_im}_comp.fits" but then we do a rescale below so I'm not sure what the output from that is...  
 
-mosaic_global_rescale.py \
+singularity run $GXCONTAINER mosaic_global_rescale.py \
 "${combined_im}_comp.fits" \
 "${combined_im}.fits" \
 "${GXBASE}/models/GGSM_sparse_unresolved.fits" \
@@ -258,7 +260,7 @@ mosaic_global_rescale.py \
 
 # TODO: Check output of the mosaic global rescale, I think it just changes so the ending is _rescaled.fits from whatever the imagenm is, checked Tims nextflow business and noticed an updated name but that's just ot name it with the drift name not the generic name
 
-prep_priorized_fitting.py --mosaic "${mosaicnm}"
+singularity run $GXCONTAINER prep_priorized_fitting.py --mosaic "${mosaicnm}"
 
 # time to cleanup: 
 
