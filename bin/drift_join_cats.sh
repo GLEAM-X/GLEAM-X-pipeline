@@ -51,11 +51,37 @@ if [[ ! -z ${dep} ]]
 then
     depend="--dependency=afterok:${dep}"
 fi
+if [[ ! -z ${GXACCOUNT} ]]
+then
+    account="--account=${GXACCOUNT}"
+fi
+
+queue="-p ${GXSTANDARDQ}"
+base="${GXSCRATCH}/${project}"
 
 if [[ ! -z ${GXACCOUNT} ]]
 then
     account="--account=${GXACCOUNT}"
 fi
+
+if [[ ! -z ${nodetype} ]]
+then 
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${nodetype} --partition=${GXSTANDARDQ}"
+        export GXCONTAINER="${GXCONTAINERPATH}/gleamx_tools_${nodetype}.img"
+        echo ${GXCONTAINER}
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+else
+    if [[ ${GXCOMPUTER} == "dug" ]]
+    then
+        partition="--constraint=${GXNODETYPE} --partition=${GXSTANDARDQ}"
+    else 
+        partition="--partition=${GXSTANDARDQ}"
+    fi 
+fi 
 
 base="${GXSCRATCH}/${project}"
 listbase=$(basename "${mosaicnm}")
@@ -73,13 +99,13 @@ error="${GXLOG}/join_cats_${listbase}.e%A"
 
 chmod 755 "${script}"
 
-# sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > "${script}.sbatch"
-echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
+# # sbatch submissions need to start with a shebang
+# echo '#!/bin/bash' > "${script}.sbatch"
+# echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
 # Automatically runs a job array for each sub-band
-sub="sbatch  --begin=now+5minutes --export=ALL  --time=00:30:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${queue} ${script}.sbatch"
+sub="sbatch  --begin=now+5minutes --export=ALL  --time=00:30:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
+sub="${sub} ${GXNCPULINE} ${partition} ${depend} ${queue} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
