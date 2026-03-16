@@ -38,7 +38,7 @@ then
     singularity shell $GXCONTAINER prep_priorized_fitting.py --mosaic "${mosaicnm}"
 fi 
 
-singularity run ${GXCONTAINER} pyhead.py -u FREQ "184955000" "${imname}.fits"
+singularity run ${GXCONTAINER} pyhead.py -u FREQ "184955000" "${mosaicnm}.fits"
 singularity run ${GXCONTAINER} mosaic_global_rescale.py "${mosaicnm}_${comb_freq}_comp.fits" "${mosaicnm}_${comb_freq}.fits" "${GXBASE}/models/GGSM_sparse_unresolved.fits" --plot --verbose --apply --sigma-thres 75
 
 
