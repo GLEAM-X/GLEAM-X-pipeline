@@ -85,9 +85,9 @@ echo "chan: ${channel}"
 
 if [[ ! -e "${imname}_prior_comp.fits" ]]
 then 
-    aegean \
+    singularity run ${GXCONTAINER} aegean \
     --regroup-eps 5 \
-    --cores ${GXNCPUS} \
+    --cores ${SLURM_CPUS_PER_TASK} \
     --background "${imname}_bkg.fits" \
     --noise "${imname}_rms.fits" \
     --psf "${mosaicnm}_${channel}MHz_projpsf_psf.fits" \
@@ -98,8 +98,14 @@ then
     "${imname}.fits"
 fi
 
+# Hack to get the freq into the fits header: 
+example_im="${base}/GX_D-12_20180511/GX_D-12_20180511_${channel}MHz_ddmod.fits"
+freq=$(singularity run ${GXCONTAINER} pyhead.py -p FREQ "${example_im}" | awk '{print $3}')
+
+singularity run ${GXCONTAINER} pyhead.py -u FREQ "${freq}" "${imname}.fits"
+
 # TODO: add backup that if freq isn't there, will add 
-mosaic_global_rescale.py "${imname}_prior_comp.fits" "${imname}.fits" "${GXBASE}/models/GGSM_sparse_unresolved.fits" --plot --verbose --apply --sigma-thres 75
+singularity run ${GXCONTAINER} mosaic_global_rescale.py "${imname}_prior_comp.fits" "${imname}.fits" "${GXBASE}/models/GGSM_sparse_unresolved.fits" --plot --verbose --apply --sigma-thres 75
 
 # TODO: Add check if successful, need to knwo what the output of globalrescale will be 
 
