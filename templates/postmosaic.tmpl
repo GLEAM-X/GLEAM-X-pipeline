@@ -128,81 +128,81 @@ weightnms="${tmp_weights}"
 
 
 
-if [[ ! -e "${combined_im}_temp.fits" ]]
-then 
-    cat "${GXBASE}"/mosaics/nightwideresamp.swarp.tmpl \
-        | sed "s;OUTIMAGE;${combined_im}_temp.fits;" \
-        | sed "s;OUTWEIGHT;${weightout};" \
-        | sed "s;WEIGHT_NAMES;${weightnms};" \
-        | sed "s;RESAMPDIR;${resampdir};" \
-        | sed "s;RACENT;${ra};" \
-        | sed "s;DECENT;${dec};" > ${template}.resamp 
+# if [[ ! -e "${combined_im}_temp.fits" ]]
+# then 
+#     cat "${GXBASE}"/mosaics/nightwideresamp.swarp.tmpl \
+#         | sed "s;OUTIMAGE;${combined_im}_temp.fits;" \
+#         | sed "s;OUTWEIGHT;${weightout};" \
+#         | sed "s;WEIGHT_NAMES;${weightnms};" \
+#         | sed "s;RESAMPDIR;${resampdir};" \
+#         | sed "s;RACENT;${ra};" \
+#         | sed "s;DECENT;${dec};" > ${template}.resamp 
 
-    singularity run $GXCONTAINER swarp -c "${template}.resamp" @"${imagelist}"
-fi
+#     singularity run $GXCONTAINER swarp -c "${template}.resamp" @"${imagelist}"
+# fi
 
 if [[ ! -e "${combined_im}.fits" ]]
 then
-    singularity run $GXCONTAINER fits_trim.py "${combined_im}_temp.fits" "${combined_im}.fits"
+    # singularity run $GXCONTAINER fits_trim.py "${combined_im}_temp.fits" "${combined_im}.fits"
 # UNCOMMENT IF NIGHT SPECIFIC 
-    # lowpsf="${mosaicnm}_${lowres_freq}_projpsf_psf"
-    # highpsf="${mosaicnm}_${highres_freq}_projpsf_psf"
+    lowpsf="${mosaicnm}_${lowres_freq}_projpsf_psf"
+    highpsf="${mosaicnm}_${highres_freq}_projpsf_psf"
     
-    # # THIS IS FOR COMBINED NIGHTS SINCE NO BLUR CORRECTION 
-    # lowpsf="${mosaicnm}_${lowres_freq}_psf"
-    # highpsf="${mosaicnm}_${highres_freq}_psf"
+    # THIS IS FOR COMBINED NIGHTS SINCE NO BLUR CORRECTION 
+    lowpsf="${mosaicnm}_${lowres_freq}_psf"
+    highpsf="${mosaicnm}_${highres_freq}_psf"
 
-    # # extract beamsizes
-    # out=$(extract_lowhigh_psf_beam.py ${lowpsf}.fits ${highpsf}.fits -p)
-    # echo "${out}"
-    # low_maj=$(echo "${out}" | grep 'Low' | cut -d ' ' -f4)
-    # low_min=$(echo "${out}" | grep 'Low' | cut -d ' ' -f5)
+    # extract beamsizes
+    out=$(singularity run $GXCONTAINER extract_lowhigh_psf_beam.py ${lowpsf}.fits ${highpsf}.fits -p)
+    echo "${out}"
+    low_maj=$(echo "${out}" | grep 'Low' | cut -d ' ' -f4)
+    low_min=$(echo "${out}" | grep 'Low' | cut -d ' ' -f5)
 
-    # high_maj=$(echo "${out}" | grep 'High' | cut -d ' ' -f4)
-    # high_min=$(echo "${out}" | grep 'High' | cut -d ' ' -f5)
+    high_maj=$(echo "${out}" | grep 'High' | cut -d ' ' -f4)
+    high_min=$(echo "${out}" | grep 'High' | cut -d ' ' -f5)
 
-    # fits in="${lowres_im}.fits" out="${lowres_im}.mir" op=xyin
-    # fits in="${highres_im}.fits" out="${highres_im}.mir" op=xyin
+    singularity run $GXCONTAINERPATH/gleamx_testing.img fits in="${lowres_im}.fits" out="${lowres_im}.mir" op=xyin
+    singularity run $GXCONTAINERPATH/gleamx_testing.img fits in="${highres_im}.fits" out="${highres_im}.mir" op=xyin
 
-    # # Put the extracted values into the files, even the low frequency ones. Not entirely sure how often
-    # # they are used by miriad, so lets just be sure they are in.
-    # puthd in="${highres_im}.mir/bmaj" value="${high_maj},arcseconds"
-    # puthd in="${highres_im}.mir/bmin" value="${high_min},arcseconds"
-    # puthd in="${lowres_im}.mir/bmaj" value="${low_maj},arcseconds"
-    # puthd in="${lowres_im}.mir/bmin" value="${low_min},arcseconds"
+    # Put the extracted values into the files, even the low frequency ones. Not entirely sure how often
+    # they are used by miriad, so lets just be sure they are in.
+    singularity run $GXCONTAINERPATH/gleamx_testing.img puthd in="${highres_im}.mir/bmaj" value="${high_maj},arcseconds"
+    singularity run $GXCONTAINERPATH/gleamx_testing.img puthd in="${highres_im}.mir/bmin" value="${high_min},arcseconds"
+    singularity run $GXCONTAINERPATH/gleamx_testing.img puthd in="${lowres_im}.mir/bmaj" value="${low_maj},arcseconds"
+    singularity run $GXCONTAINERPATH/gleamx_testing.img puthd in="${lowres_im}.mir/bmin" value="${low_min},arcseconds"
 
-    # # Get out the values, we just put in, needlessly. See above message about why it is done this way.
-    # prthd in="${lowres_im}.mir"
+    # Get out the values, we just put in, needlessly. See above message about why it is done this way.
+    singularity run $GXCONTAINERPATH/gleamx_testing.img prthd in="${lowres_im}.mir"
 
 
-    # lowres_fwhm_a=$(prthd in="${lowres_im}.mir" | grep Beam | tr -s ' ' | cut -d ' ' -f3)
-    # lowres_fwhm_b=$(prthd in="${lowres_im}.mir" | grep Beam | tr -s ' ' | cut -d ' ' -f5)
-    # lowres_pos_ang=$(prthd in="${lowres_im}.mir" | grep Position | tr -s ' ' | cut -d ' ' -f3)
+    lowres_fwhm_a=$(singularity run $GXCONTAINERPATH/gleamx_testing.img prthd in="${lowres_im}.mir" | grep Beam | tr -s ' ' | cut -d ' ' -f3)
+    lowres_fwhm_b=$(singularity run $GXCONTAINERPATH/gleamx_testing.img prthd in="${lowres_im}.mir" | grep Beam | tr -s ' ' | cut -d ' ' -f5)
+    lowres_pos_ang=$(singularity run $GXCONTAINERPATH/gleamx_testing.img prthd in="${lowres_im}.mir" | grep Position | tr -s ' ' | cut -d ' ' -f3)
 
-    # echo "Extracted FWHM of low-resolution image: ${lowres_fwhm_a}x${lowres_fwhm_b} and ${lowres_pos_ang}"
+    echo "Extracted FWHM of low-resolution image: ${lowres_fwhm_a}x${lowres_fwhm_b} and ${lowres_pos_ang}"
 
-    # # Regriding the lowres to match highres
-    # regrid in="${lowres_im}.mir" \
-    # out="${lowres_im}_regrid.mir" \
-    # tin="${highres_im}.mir"
+    # Regriding the lowres to match highres
+    singularity run $GXCONTAINERPATH/gleamx_testing.img regrid in="${lowres_im}.mir" \
+    out="${lowres_im}_regrid.mir" \
+    tin="${highres_im}.mir"
 
-    # # Convolving the high res to low res
-    # convol map="${highres_im}.mir" \
-    # fwhm="${lowres_fwhm_a},${lowres_fwhm_b}" \
-    # pa="${lowres_pos_ang}" \
-    # options=final \
-    # out="${highres_im}_convol.mir"
+    # Convolving the high res to low res
+    singularity run $GXCONTAINERPATH/gleamx_testing.img convol map="${highres_im}.mir" \
+    fwhm="${lowres_fwhm_a},${lowres_fwhm_b}" \
+    pa="${lowres_pos_ang}" \
+    options=final \
+    out="${highres_im}_convol.mir"
 
-    # # Averaging the two imgaes
-    # maths exp="'(<${lowres_im}_regrid.mir>+<${highres_im}_convol.mir>)/2'" out="${combined_im}.mir"
+    # Averaging the two imgaes
+    singularity run $GXCONTAINERPATH/gleamx_testing.img maths exp="'(<${lowres_im}_regrid.mir>+<${highres_im}_convol.mir>)/2'" out="${combined_im}.mir"
 
-    # puthd in="${combined_im}.mir/freq" value=200315000
+    singularity run $GXCONTAINERPATH/gleamx_testing.img puthd in="${combined_im}.mir/freq" value=200315000
 
-    # # Exporting the miriad to a regular image
-    # fits in="${combined_im}.mir" out="${combined_im}.fits" op=xyout
+    # Exporting the miriad to a regular image
+    singularity run $GXCONTAINERPATH/gleamx_testing.img fits in="${combined_im}.mir" out="${combined_im}.fits" op=xyout
 
-    # # Tidying up and removing the miriad files we just made since we don't need them 
-    # find . -iname "*.mir" -type d -exec rm -rf {} +
+    # Tidying up and removing the miriad files we just made since we don't need them 
+    find . -iname "*.mir" -type d -exec rm -rf {} +
 else 
     echo "Already have combined image ${combined_im}.fits, won't remake."
 fi
