@@ -73,9 +73,9 @@ echo "taskid: ${taskid}"
 # Deleting the miriad files from previous rounds in case so that miriad doesn't freak out and crash
 # find . -iname "*.mir" -type d -exec rm -rf {} +
 # NOTE: have deleted _ddmod from im names since we're working with the final mosaics no ddmods going on 
-lowres_im="${mosaicnm}_${lowres_freq}"
-highres_im="${mosaicnm}_${highres_freq}"
-combined_im="${mosaicnm}_${combined_freq}"
+lowres_im="${mosaicnm}_${lowres_freq}_ddmod"
+highres_im="${mosaicnm}_${highres_freq}_ddmod"
+combined_im="${mosaicnm}_${combined_freq}_ddmod"
 
 if [[ -z $ra ]]
 then 
