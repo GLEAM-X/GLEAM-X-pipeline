@@ -15,6 +15,7 @@ name was used.
   -r RA       : Right Ascension (decimal hours; default = guess from observation list)
   -e dec      : Declination (decimal degrees; default = guess from observation list)
   -n node     : Node type for dug (default=GXNODETYPE)
+  -s sourcecat : Source catalogue to use for psf generation (default = Catalog_sparse_unresolved.fits)
   -m mosaicdir: Directory name for mosaics to be created (default = mosaics) 
   nightlist  : the list of nights with existing coadded images to process" 1>&2;
 exit 1;
@@ -29,8 +30,9 @@ ra=
 dec=
 mosaicdir=
 nodetype=
+sourcecat="Catalog_sparse_unresolved.fits"
 # parse args and set options
-while getopts ':td:p:r:e:m:n:' OPTION
+while getopts ':td:p:r:e:s:m:n:' OPTION
 do
     case "$OPTION" in
     d)
@@ -41,6 +43,8 @@ do
         ra=${OPTARG} ;;
     e)
         dec=${OPTARG} ;;
+    s)
+        sourcecat=${OPTARG} ;;
     n)
         nodetype=${OPTARG} ;;
     m) 
@@ -111,6 +115,7 @@ cat "${GXBASE}/templates/nightcoadd.tmpl" | sed -e "s:NIGHTLIST:${nightlist}:g" 
                                       -e "s:BASEDIR:${base}:g" \
                                       -e "s:NODETYPE:${nodetype}:g" \
                                       -e "s:MOSAICDIR:${mosaicdir}:g" \
+                                      -e "s:SOURCECAT:${sourcecat}:g" \
                                       -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
 output="${GXLOG}/nightcoadd_${listbase}.o%A_%a"
@@ -123,7 +128,7 @@ chmod 755 "${script}"
 # echo "singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
 # Automatically runs a job array for each sub-band
-sub="sbatch  --begin=now --array=0-24  --export=ALL  --time=10:00:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
+sub="sbatch  --begin=now --array=0-25  --export=ALL  --time=10:00:00 --mem=${GXABSMEMORY}G --output=${output} --error=${error}"
 sub="${sub} ${GXNCPULINE} ${partition} ${depend} ${queue} ${script}"
 if [[ ! -z ${tst} ]]
 then
@@ -144,11 +149,11 @@ output=${output//%A/"${jobid}"}
 freqs=(072-080MHz 072-103MHz 080-088MHz 088-095MHz 095-103MHz 103-111MHz 103-134MHz 111-118MHz
 118-126MHz 126-134MHz 139-147MHz 139-170MHz 147-154MHz 154-162MHz 162-170MHz 170-177MHz
 170-200MHz 177-185MHz 185-193MHz 193-200MHz 200-208MHz 200-231MHz 208-216MHz 216-223MHz
-223-231MHz)
+223-231MHz 170-231MHz)
 echo "Submitted ${script} as ${jobid} . Follow progress here:"
 
 # record submission
-for taskid in $(seq 0 1 24)
+for taskid in $(seq 0 1 25)
 do
     terror="${error//%a/${taskid}}"
     toutput="${output//%a/${taskid}}"

@@ -10,7 +10,7 @@ ra=RAPOINT
 dec=DECPOINT
 mosaicdir=MOSAICDIR
 node=NODETYPE
-
+sourcecat=SOURCECAT
 echo $GXCONTAINER 
 if [[ ! -z ${node} ]]
 then 
@@ -37,7 +37,7 @@ jobid=${SLURM_ARRAY_JOB_ID}
 freqs=(072-080MHz 072-103MHz 080-088MHz 088-095MHz 095-103MHz 103-111MHz 103-134MHz 111-118MHz
 118-126MHz 126-134MHz 139-147MHz 139-170MHz 147-154MHz 154-162MHz 162-170MHz 170-177MHz
 170-200MHz 177-185MHz 185-193MHz 193-200MHz 200-208MHz 200-231MHz 208-216MHz 216-223MHz
-223-231MHz)
+223-231MHz 170-231MHz)
 freq=${freqs[$SLURM_ARRAY_TASK_ID]}
 
 echo "jobid: ${jobid}"
@@ -302,7 +302,7 @@ if [[ ! -e "${outname}_comp.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
     if [[ ! -e "${outname}_psf.fits" ]]
     then
         prefix=$(echo ${freq} | cut -d "M" -f-1)
-        singularity run $GXCONTAINER psf_select.py --input="${outname}_comp.fits" --prefix="${prefix}"
+        singularity run $GXCONTAINER psf_select.py --input="${outname}_comp.fits" --prefix="${prefix}" --nscat="${GXBASE}/models/${sourcecat}"
         singularity run $GXCONTAINER psf_create.py --input="${outname}_comp_psfcat.fits"
     fi
 
