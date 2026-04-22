@@ -11,6 +11,7 @@ echo "drift_postmosaic.sh [-p project] [-d dep] [-t] [-m mosaicdir] [-l lowres_f
   -l lowres   : Frequency range of the lowres image. (default=170-200MHz)
   -i highres  : Frequency range of the highres image (default=200-231MHz)
   -c comb     : Frequency range of combined image (default=170-231MHz)
+  -s sourcecat : Source catalogue to use for psf generation (default = Catalog_sparse_unresolved.fits)
   -r racen    : Central RA for final combined mosaic (default use highf image)
   -e deccen   : Central Dec for final combined mosaic (default use highf image)
   -n mosaicnm : Name of the mosaic, typically the drift name e.g. XG_D-27_20201015 (no default, must be specified)" 1>&2;
@@ -29,9 +30,9 @@ highres_freq=
 comb_freq=
 racen=
 deccen=
-
+sourcecat="Catalog_sparse_unresolved.fits"
 # parse args and set options
-while getopts ':td:p:m:l:i:c:r:e:n:' OPTION
+while getopts ':td:p:m:l:i:c:s:r:e:n:' OPTION
 do
     case "$OPTION" in
     d)
@@ -42,6 +43,8 @@ do
         mosaicdir=${OPTARG} ;;
     t)
         tst=1 ;;
+    s)
+        sourcecat=${OPTARG} ;;
     l)
         lowres_freq=${OPTARG} ;;
     i)
@@ -88,6 +91,7 @@ cat "${GXBASE}/templates/postmosaic.tmpl" | sed -e "s:BASEDIR:${base}:g" \
                                                 -e "s:HIGHRES_FREQ:${highres_freq}:g" \
                                                 -e "s:COMB_FREQ:${comb_freq}:g" \
                                                 -e "s:RAPOINT:${racen}:g"  \
+                                                -e "s:SOURCECAT:${sourcecat}:g" \
                                                 -e "s:DECPOINT:${deccen}:g" > ${script}
 
 

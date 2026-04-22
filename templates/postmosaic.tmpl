@@ -11,6 +11,7 @@ highres_freq=HIGHRES_FREQ
 combined_freq=COMB_FREQ
 ra=RAPOINT
 dec=DECPOINT
+sourcecat=SOURCECAT
 
 cd "${base}" || exit 1
 
@@ -250,6 +251,8 @@ fi
 
 # SO THE PRIORIZED CAT SHOULD BE: "${combined_im}_comp.fits" but then we do a rescale below so I'm not sure what the output from that is...  
 
+singularity run $GXCONTAINER sigmoid_edge_weight.py --mask ${combined_im}.fits ${combined_im}_rms.fits "${combined_im}_weightmap.fits"
+
 singularity run $GXCONTAINER mosaic_global_rescale.py \
 "${combined_im}_comp.fits" \
 "${combined_im}.fits" \
@@ -260,7 +263,7 @@ singularity run $GXCONTAINER mosaic_global_rescale.py \
 
 # TODO: Check output of the mosaic global rescale, I think it just changes so the ending is _rescaled.fits from whatever the imagenm is, checked Tims nextflow business and noticed an updated name but that's just ot name it with the drift name not the generic name
 
-singularity run $GXCONTAINER prep_priorized_fitting.py --mosaic "${mosaicnm}"
+# singularity run $GXCONTAINER prep_priorized_fitting.py --mosaic "${mosaicnm}"
 
 # time to cleanup: 
 
