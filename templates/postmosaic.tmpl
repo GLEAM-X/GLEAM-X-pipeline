@@ -250,8 +250,9 @@ else
 fi 
 
 # SO THE PRIORIZED CAT SHOULD BE: "${combined_im}_comp.fits" but then we do a rescale below so I'm not sure what the output from that is...  
-
-singularity run $GXCONTAINER sigmoid_edge_weight.py --mask ${combined_im}.fits ${combined_im}_rms.fits "${combined_im}_weightmap.fits"
+fraction=$(singularity run $GXCONTAINER pyhead.py -p BN_CFRAC "${combined_im}_rms.fits" | awk '{print $3}')
+singularity run $GXCONTAINER SR6 -o ${combined_im}_fullrms.fits -f ${fraction} -x --debug ${combined_im}_rms.fits
+singularity run $GXCONTAINER sigmoid_edge_weight.py --mask ${combined_im}.fits ${combined_im}_fullrms.fits "${combined_im}_weightmap.fits"
 
 singularity run $GXCONTAINER mosaic_global_rescale.py \
 "${combined_im}_comp.fits" \
