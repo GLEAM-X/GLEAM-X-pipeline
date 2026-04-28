@@ -290,12 +290,12 @@ fi
 
 # Blur correction and final PSF generation
 if [[ ! -e "${outname}_comp.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
-    singularity run $GXCONTAINER BANE --noclobber --cores=${GXNCPUS} "${outname}.fits"
+        singularity run $GXCONTAINERPATH/aegeancontainer.img BANE --cores=${SLURM_CPUS_PER_TASK} "${outname}.fits"
 
     # To create the final PSF map that I will use later, run source-finding without any PSF input
     if [[ ! -e "${outname}_comp.fits" ]]
     then
-        singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
+        singularity run $GXCONTAINER aegean --progress --cores=${SLURM_CPUS_PER_TASK} --seedclip=10 --maxsummits=5 --autoload --table="${outname}.fits" "${outname}.fits"
     fi
 
     # Generate a measured PSF map
@@ -306,7 +306,7 @@ if [[ ! -e "${outname}_comp.fits" ]] || [[ ! -e "${outname}_psf.fits" ]]; then
         singularity run $GXCONTAINER psf_create.py --input="${outname}_comp_psfcat.fits"
     fi
 
-    # singularity run $GXCONTAINER aegean --progress --cores=${GXNCPUS} --seedclip=4 --maxsummits=5 --autoload --table="${outname}.fits" --psf="${outname}_psf.fits" "${outname}.fits"
+    singularity run $GXCONTAINER aegean --progress --cores=${SLURM_CPUS_PER_TASK} --seedclip=4 --maxsummits=5 --autoload --table="${outname}.fits" --psf="${outname}_psf.fits" "${outname}.fits"
 fi
 
 
