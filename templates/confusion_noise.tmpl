@@ -55,29 +55,42 @@ og_rms="${imname}_rms.fits"
 
 if [[ ! -e ${og_bkg} ]]
 then
-    BANE --cores 1 ${imname}.fits
+    singularity run $GXCONTAINERPATH/aegeancontainer.img BANE \
+        --cores ${SLURM_CPUS_PER_TASK} \
+        ${imname}.fits
 fi
 
-if [[! -e "${imname}_firstpass.fits" ]]
-then
-    aegean \
-    --regroup-eps 5 \
-    --cores ${GXNCPUS} \
-    --background "${og_bkg}" \
-    --noise "${og_rms}" \
-    --psf "${imname}_psfmap.fits" \
-    --table "${imname}_firstpass.fits" \
-    --priorized 1 \
-    --input "${prior_cat}" \
-    --progress \
-    "${imname}.fits"
+if [[ -e "${imname}_prior_comp.fits" ]]
+then 
+    mv "${imname}_prior_comp.fits" "${imname}_firstpass.fits"
+    mv "${imname}_prior_comp_rescaled.fits" "${imname}_firstpass_rescaled.fits"
+else
+    if [[ -e "${imname}_firstpass.fits" ]]
+    then 
+        echo "First pass already exists, but no prior comp?"
+    else
+        singularity run $GXCONTAINER aegean \
+            --regroup-eps 5 \
+            --cores ${SLURM_CPUS_PER_TASK} \
+            --background "${og_bkg}" \
+            --noise "${og_rms}" \
+            --psf "${imname}_psf.fits" \
+            --table "${imname}_firstpass.fits" \
+            --priorized 1 \
+            --input "${prior_cat}" \
+            --progress \
+            "${imname}.fits"
 
-    mv ${imname}_firstpass_comp.fits ${imname}_firstpass.fits 
-fi 
+        mv "${imname}_firstpass_comp.fits" "${imname}_firstpass.fits" 
+    fi
+fi
 
-AeRes -c ${imname}_firstpass.fits -f ${imname}.fits -r ${imname}_resid.fits
 
-BANE --cores 1 ${imname}_resid.fits 
+singularity run $GXCONTAINER AeRes -c ${imname}_firstpass.fits -f ${imname}.fits -r ${imname}_resid.fits
+
+singularity run $GXCONTAINERPATH/aegeancontainer.img BANE \
+    --cores ${SLURM_CPUS_PER_TASK} \
+    ${imname}_resid.fits 
 
 mv ${imname}_bkg.fits ${imname}_firstpass_bkg.fits 
 mv ${imname}_rms.fits ${imname}_firstpass_rms.fits 

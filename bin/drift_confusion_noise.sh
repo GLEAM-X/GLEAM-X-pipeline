@@ -71,12 +71,12 @@ error="${GXLOG}/confusion_noise_${listbase}.e%A_%a"
 chmod 755 "${script}"
 
 # sbatch submissions need to start with a shebang
-echo '#!/bin/bash' > "${script}.sbatch"
-echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
+# echo '#!/bin/bash' > "${script}.sbatch"
+# echo "srun --cpus-per-task=${GXNCPUS} --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
 # Automatically runs a job array for each sub-band
-sub="sbatch  --begin=now+5minutes --array=0-4  --export=ALL  --time=05:00:00 --mem=${GXABSMEMORY}G -M ${GXCOMPUTER} --output=${output} --error=${error}"
-sub="${sub} ${GXNCPULINE} ${account} ${GXTASKLINE} ${depend} ${queue} ${script}.sbatch"
+sub="sbatch  --begin=now+5minutes --array=0-4  --export=ALL  --time=20:00:00 --mem=80G --output=${output} --error=${error}"
+sub="${sub} --ntasks-per-node=1 --cpus-per-task=60 ${depend} ${queue} ${script}"
 if [[ ! -z ${tst} ]]
 then
     echo "script is ${script}"
