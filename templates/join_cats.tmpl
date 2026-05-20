@@ -35,16 +35,16 @@ fi
 
 if [[ ! -e "${mosaicnm}_catalogues.csv" ]]
 then 
-    singularity shell $GXCONTAINER prep_priorized_fitting.py --mosaic "${mosaicnm}"
+    singularity exec $GXCONTAINER prep_priorized_fitting.py --mosaic "${mosaicnm}"
 fi 
 
 singularity run ${GXCONTAINER} pyhead.py -u FREQ "184955000" "${imname}_${comb_freq}.fits"
 singularity run ${GXCONTAINER} mosaic_global_rescale.py "${mosaicnm}_${comb_freq}_comp.fits" "${mosaicnm}_${comb_freq}.fits" "${GXBASE}/models/GGSM_sparse_unresolved.fits" --plot --verbose --apply --sigma-thres 75
 
 
-singularity shell $GXCONTAINER join_catalogues.py --epochs "${mosaicnm}_catalogues.csv" --refcat "${mosaicnm}_${comb_freq}_comp_rescaled.fits" --out "${mosaicnm}_joined_comp.vot" --all 
+singularity exec $GXCONTAINER join_catalogues.py --epochs "${mosaicnm}_catalogues.csv" --refcat "${mosaicnm}_${comb_freq}_comp_rescaled.fits" --out "${mosaicnm}_joined_comp.vot" --all 
 
-singularity shell $GXCONTAINER join_catalogues.py --epochs "${mosaicnm}_catalogues_rescaled.csv" --refcat "${mosaicnm}_${comb_freq}_comp_rescaled.fits" --out "${mosaicnm}_joined_rescaled_comp.vot" --all 
+singularity exec $GXCONTAINER join_catalogues.py --epochs "${mosaicnm}_catalogues_rescaled.csv" --refcat "${mosaicnm}_${comb_freq}_comp_rescaled.fits" --out "${mosaicnm}_joined_rescaled_comp.vot" --all 
 
 
 if [[ -e "${mosaicnm}_joined_rescaled_comp.vot" ]]
