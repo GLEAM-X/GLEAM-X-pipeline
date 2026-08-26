@@ -1,10 +1,12 @@
 #! /bin/bash -l
 
-echo "loading gleam-x profile"
+echo "Loading GLEAM-X profile..."
 
 # Any system module file should be loaded here. Aside from singularity and slurm there are
 # no additional modules that are expected to be needed
-module load singularity
+# David Schibeci was here and changed singularity/3.8.6 to singularity/3.8.6-nompi
+# Setonix upgrade on 4th September broke the previous version of singularity
+module load singularity/4.1.0-slurm
 
 # Before running obs_*.sh scripts ensure the completed configuration file has been sourced. 
 # As a convention when specifying paths below, please ensure that they do not end with a trailing '/', as
@@ -12,51 +14,51 @@ module load singularity
 
 
 # Basic configuration
-cluster="garrawarla"            # System-wide name of cluster, e.g. "garrawarla". This should match the name of the cluster, which can be checked 
+cluster="setonix"               # System-wide name of cluster, e.g. "garrawarla". This should match the name of the cluster, which can be checked 
                                 # with 'scontrol show config' under ClusterName, or under the environment variable HOST_CLUSTER
                                 # This is used when submitting jobs 'sbatch -M ${GXCLUSTER}'. See GXCLUSTER below. 
 export GXUSER=$(whoami)         # User name of the operator running the pipeline. This is here to generate user-specific filenames and paths. 
                                 # It is recommend to use the login account name, although in principal this is not critical and other approaches
                                 # could be adopted
 export GXVERSION='3.1.0'        # Version number of the pipeline. This should not be changed. Currently it is defined here but not used.  
-export GXACCOUNT=               # The SLURM account jobs will be run under. e.g. 'pawsey0272'. Empty will not pass through a 
+export GXACCOUNT="pawsey0272"   # The SLURM account jobs will be run under. e.g. 'pawsey0272'. Empty will not pass through a 
                                 # corresponding --account=${GXACCOUNT} to the slurm submission. Only relevant if SLURM is tracking time usage 
-export GXBASE="/not/actual/path" # Path to base of GLEAM-X Pipeline where the repository was 'git clone' into including the name of the repository foldername, e.g. "/astro/mwasci/tgalvin/GLEAM-X-pipeline" 
-export GXSCRATCH="/scratch"     # Path to your scratch space used for processing on the HPC environment, e.g. /scratch
+export GXBASE="/software/projects/pawsey0272/${GXUSER}/GLEAM-X-pipeline" # Path to base of GLEAM-X Pipeline where the repository was 'git clone' into including the name of the repository foldername, e.g. "/astro/mwasci/tgalvin/GLEAM-X-pipeline" 
+export GXSCRATCH="/scratch/pawsey0272/${GXUSER}"     # Path to your scratch space used for processing on the HPC environment, e.g. /scratch
                                 # Within pawsey this is /astro/mwas/${GXUSER}
 export GXHOME="${GXSCRATCH}"    # HOME space for some tasks. In some system configurations singularity can not mount $HOME, but applications (e.g. CASA, python) would like 
                                 # one to be available to cache folders. This does not have to be an actual $HOME directory, just a folder with read and write access. 
                                 # Suggestion is the same path as the scratch space, e.g. $GXSCRATCH. Although if the HPC is configured correctly it could be set to HOME. 
                                 # This variable is not used in any tasks -- but it used in the creation of the SINGULARITY_BINDPATH variable.
-export GXCONTAINER="${GXSCRATCH}/gleamx.img"  # Absolute path to the GLEAM-X singularity container, including the file name, e.g. "${GXSCRATCH}/gleamx.img"
-                                              # This container is still being evaluated and available when requested from Tim Galvin. In a future update
-                                              # the container will be automatically downloaded alongside other data dependencies. 
+export GXCONTAINER="${GXBASE}/gleamx_container_21Mar25.img"  # Absolute path to the GLEAM-X singularity container, including the file name, e.g. "${GXSCRATCH}/gleamx.img"
+                                # This container is still being evaluated and available when requested from Tim Galvin. In a future update
+                                # the container will be automatically downloaded alongside other data dependencies. 
 
 # SLURM compute schedular information
 export GXCOMPUTER=${cluster}    # Maintained for compatability. Describes the name of the cluster, e.g. "magnus". 
 export GXCLUSTER=${cluster}     # Describes the name of the cluster, e.g. "magnus". This is used when submitting tasks 'sbatch -M ${GXCLUSTER}', and in track_task.py as a 
                                 # component of the composite key. In the future the '-M' machine option will likely be removed from all but obs_manta.sh.  
-export GXSTANDARDQ="workq"      # Slurm queue to submit tasks to, e.g. "workq". Available queues can be inspected using 'sinfo' on a system where the slurm schedular is available
+export GXSTANDARDQ="work"       # Slurm queue to submit tasks to, e.g. "workq". Available queues can be inspected using 'sinfo' on a system where the slurm schedular is available
 
 # Compute node memory specification
-export GXABSMEMORY=60           # Absolute memory a machine should be considered to have in GB, e.g. 60. This value is submitted to slurm via "--mem=${GXABSMEMORY}"
+export GXABSMEMORY=200          # Absolute memory a machine should be considered to have in GB, e.g. 60. This value is submitted to slurm via "--mem=${GXABSMEMORY}"
                                 # For tasks that require only a small memory allocation, this option is ignored and a hard-coded value of "24G" is used. This is done
                                 # to assist in quicker resource allocation 
-export GXMEMORY=50              # Typical memory a program should use in GB, e.g. 50. This is used for tasks like 'calibrate' and 'wsclean' to attempt to limit
+export GXMEMORY=185             # Typical memory a program should use in GB, e.g. 50. This is used for tasks like 'calibrate' and 'wsclean' to attempt to limit
                                 # its usage to the fit within the memory allocation alongside other overheads. It is recommended that this be ~10G smaller than
                                 # GXABSMEMORY, although there is no technical reason it could be set otherwise. 
 
 # Compute node CPU specification
-export GXNCPUS=48               # Number of CPUs of each machine, e.g. 48. For tasks that have a 'core' like option this value is passed. 
-export GXNLCPUS=48              # Number of logical CPUs on each machine, e.g. 48. This option may be phased out. 
-export GXNPCPUS=24              # Number of physical CPUs on each machine, e.g. 24. This is meant to count only the physical cores available. 
-export GXNCPULINE="--ntasks-per-node=${GXNPCPUS}"  # Informs the SLURM request how many CPUs should be allocated, e.g. "--ntasks-per-node=${GXNPCPUS}" 
-                                # If unset the SLURM default will be used. For tasks that are not parallelisable (apply_cal, uvflag), 
+export GXNCPUS=48               # Number of CPUs of each machine, e.g. 48. For tasks that have a 'core' like option this value is passed.
+export GXNLCPUS=48              # Number of logical CPUs on each machine, e.g. 48. This option may be phased out.
+export GXNPCPUS=24              # Number of physical CPUs on each machine, e.g. 24. This is meant to count only the physical cores available.
+export GXNCPULINE="--nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${GXNCPUS}"            # Informs the SLURM request how many CPUs should be allocated, e.g. "--ntasks-per-node=${GXNPCPUS}"
+                                # If unset the SLURM default will be used. For tasks that are not parallelisable (apply_cal, uvflag),
                                 # this option will be overwritten (if it is set) to ensure a single core is used.
-                                # There may be some interaction between this line and $GXNCPUS when deployed. For instance, on magnus only a max of 24 cores  
+                                # There may be some interaction between this line and $GXNCPUS when deployed. For instance, on magnus only a max of 24 cores
                                 # can be requested, but there are 48 available in the job (logical hyper-threaded cores ignored in resource request).
-                                # For SLURM environments that do not share a node among users (entire node is booked for a request), it is suggested that 
-                                # this option is left empty.  
+                                # For SLURM environments that do not share a node among users (entire node is booked for a request), it is suggested that
+                                # this option is left empty.
 
 # SLURM job submission details 
 export GXTASKLINE=                              # Reserved space for additional slurm sbatch options, if needed. This is passed to all SLURM sbatch calls. 
@@ -64,12 +66,11 @@ export GXLOG="${GXBASE}/log_${GXCLUSTER}"       # Path to output task logs, e.g.
 export GXSCRIPT="${GXBASE}/script_${GXCLUSTER}" # Path to place generated template scripts. e.g. "${GXBASE}/script_${GXCLUSTER}". It is recommended that this is cluster specific.
 export GXTRACK='no-track'                       # Directive to inform task tracking for meta-database. 'track' will track task progression. Anything else will disable tracking. 
 
-
-export GXSSH="${GXBASE}/ssh_keys/gx_${GXUSER}"                      # Path to SSH private key to be used for archiving. If you direct it to a new generated key-pair 
-if [ ! -z "${GXSSH}" ] && [ ! -f "${GXSSH}" ]                       # ensure restricted folder/file permissions, e.g. cmod -R 700 "${GXBASE}/ssh_keys"
+export GXSSH="${GXBASE}/ssh_keys/id_rsa"                            # Path to SSH private key to be used for archiving. If you direct it to a new generated key-pair
+if [ ! -z "${GXSSH}" ] && [ ! -f "${GXSSH}" ]                       # ensure restricted folder/file permissions, e.g. chmod -R 700 "${GXBASE}/ssh_keys"
 then                                                                # Keys can be generated with: ssh-keygen -t rsa -f "${GXBASE}/ssh_keys/gx_${GXUSER}"
     echo "GXSSH set to ${GXSSH}, but not found. Setting to empty."  # This is used only in the archiving script, as on Magnus it appears singularity can not bind to $HOME correctly.
-    export GXSSH=""                                                 # The normal ssh key in a users home directory can be used as well, e.g. ${HOME}/.ssh/id_rsa
+    export GXSSH="${GXBASE}/ssh_keys/gx_${GXUSER}"                  # The normal ssh key in a users home directory can be used as well, e.g. ${HOME}/.ssh/id_rsa
 fi
 
 # Data dependencies
@@ -81,10 +82,10 @@ export GXMWAPB="${GXBASE}/data/mwa_pb"  # The calibrate program requires the FEE
 export GXMWALOOKUP="${GXBASE}/data/pb"  # The path to the folder containing the MWA PB lookup HDF5's used by lookup_beam.py and lookup_jones.py. 
                                         # If this folder does not exist, it is created. 
 # Details for obs_manta
-export GXCOPYA=             # Account to submit obs_manta.sh job under, if time accounting is being performed by SLURM.
-                            # Leave this empty if the job is to be submitted as the user and there is no time accounting.
-export GXCOPYQ='copyq'      # A required parameter directing the job to a particular queue on $GXCOPYM. Set as just the queue name, e.g. 'copyq'
-export GXCOPYM='zeus'       # A required parameter directing the job to be submitted to a particular machine. Set as just the machine name, e.g. 'zeus'
+export GXCOPYA='pawsey0272'             # Account to submit obs_manta.sh job under, if time accounting is being performed by SLURM.
+                                        # Leave this empty if the job is to be submitted as the user and there is no time accounting.
+export GXCOPYQ='mwa-asvoc'              # A required parameter directing the job to a particular queue on $GXCOPYM. Set as just the queue name, e.g. 'copyq'
+export GXCOPYM='setonix'                # A required parameter directing the job to be submitted to a particular machine. Set as just the machine name, e.g. 'zeus'
 
 # Staging area
 export GXSTAGE=             # To support the polarisation effort led by Xiang Zhang and George Heald at CSIRO, calibrated measurement sets
@@ -99,7 +100,7 @@ export GXSTAGE=             # To support the polarisation effort led by Xiang Zh
 # This describes a set of paths that need to be available within the container for all processing tasks. Depending on the system
 # and pipeline configuration it is best to have these explicitly set across all tasks. For each 'singularity run' command this
 # SINGULARITY_BINDPATHS will be used to mount against. These GX variables should be all that is needed on a typical deployed 
-# pipeline, but can be used to further expose/enhance functionality if desired. 
+# pipeline, but can be used to further expose/enhance functionality if desired.
 export SINGULARITY_BINDPATH="${GXHOME}:${HOME},${GXSCRIPT},${GXBASE},${GXSCRATCH},${GXSSH},${GXMWALOOKUP}:/pb_lookup,${GXMWAPB},${GXSTAGE}"
 
 export PATH="${PATH}:${GXBASE}/bin" # Adds the obs_* script to the searchable path. 
@@ -119,7 +120,7 @@ export XDG_CACHE_HOME="${GXSCRATCH}"
 # - GXDBPASS
 # This GXSECRETS file is expected to export each of the variables above. 
 # This file SHOULD NOT be git tracked! 
-GXSECRETS=
+GXSECRETS="${GXBASE}/secrets/gleamx_secrets.profile"
 if [[ -f ${GXSECRETS} ]]
 then
     source "${GXSECRETS}"
@@ -186,4 +187,3 @@ then
 
     fi
 fi
-
