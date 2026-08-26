@@ -5,4 +5,14 @@ queue/*
 */*pyc
 *pyc
 .vscode
-data/mwa_pb/mwa_full_embedded_element_pattern.h5
+data/*
+*.img
+*.txt
+*.ipynb
+*.json
+GLEAM-X-pipeline-setonix.profile
+script_setonix/*
+log_setonix/*
+old_logs/*
+ssh_keys/*
+pb_lookup.tar.gz
