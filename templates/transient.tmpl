@@ -196,7 +196,7 @@ out="${obsnum}_transient_matched_table.fits"
 make_time_cube.py ${obsnum}_transient
 
 # Dump the image and model files into a hdf5 container
-make_imstack.py "${obsnum}_transient" 
+make_imstack.py -n 24 --start 0 "${obsnum}_transient"
 
 # Save the flags
 ms="${obsnum}.ms"
@@ -207,4 +207,3 @@ rm "${obsnum}"_transient-t????-*.fits
 # rm "${obsnum}_transient_concatenated_table.fits"
 
 track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
-

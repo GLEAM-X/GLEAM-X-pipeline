@@ -66,11 +66,11 @@ export GXLOG="${GXBASE}/log_${GXCLUSTER}"       # Path to output task logs, e.g.
 export GXSCRIPT="${GXBASE}/script_${GXCLUSTER}" # Path to place generated template scripts. e.g. "${GXBASE}/script_${GXCLUSTER}". It is recommended that this is cluster specific.
 export GXTRACK='no-track'                       # Directive to inform task tracking for meta-database. 'track' will track task progression. Anything else will disable tracking. 
 
-export GXSSH="${GXBASE}/ssh_keys/id_rsa"                            # Path to SSH private key to be used for archiving. If you direct it to a new generated key-pair
+export GXSSH="${GXBASE}/ssh_keys/gx_${GXUSER}"                      # Path to SSH private key to be used for archiving. If you direct it to a new generated key-pair
 if [ ! -z "${GXSSH}" ] && [ ! -f "${GXSSH}" ]                       # ensure restricted folder/file permissions, e.g. chmod -R 700 "${GXBASE}/ssh_keys"
 then                                                                # Keys can be generated with: ssh-keygen -t rsa -f "${GXBASE}/ssh_keys/gx_${GXUSER}"
     echo "GXSSH set to ${GXSSH}, but not found. Setting to empty."  # This is used only in the archiving script, as on Magnus it appears singularity can not bind to $HOME correctly.
-    export GXSSH="${GXBASE}/ssh_keys/gx_${GXUSER}"                  # The normal ssh key in a users home directory can be used as well, e.g. ${HOME}/.ssh/id_rsa
+    export GXSSH=""                                                 # The normal ssh key in a users home directory can be used as well, e.g. ${HOME}/.ssh/id_rsa
 fi
 
 # Data dependencies

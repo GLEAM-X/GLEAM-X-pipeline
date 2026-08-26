@@ -5,10 +5,9 @@ __author__ = "Natasha Hurley-Walker"
 __date__ = "12/09/2018"
 
 import os, sys
-from optparse import OptionParser #NB zeus does not have argparse!
+from optparse import OptionParser # NB zeus does not have argparse!
 
 import numpy as np
-import math
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt

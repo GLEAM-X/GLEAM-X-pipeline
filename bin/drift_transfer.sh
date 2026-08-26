@@ -127,7 +127,7 @@ echo '#!/bin/bash' > "${script}.sbatch"
 # echo "export SINGULARITY_BINDPATH=${SINGULARITY_BINDPATH}" >> "${script}.sbatch"
 echo "srun --export=all --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> "${script}.sbatch"
 
-if [ ! -z ${GXNCPULINE} ]
+if [[ -n ${GXNCPULINE} ]]
 then
     # archive only needs a single CPU core
     GXNCPULINE="--ntasks-per-node=1"

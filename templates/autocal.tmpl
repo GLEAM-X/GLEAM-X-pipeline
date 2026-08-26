@@ -29,7 +29,7 @@ fi
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
 
-function test_fail {
+test_fail() {
 if [[ $1 != 0 ]]
 then
     singularity run ${GXCONTAINER} track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
@@ -145,7 +145,7 @@ minuvm=$(echo "234 * ${minuv} / ${chan}" | bc -l)
 # Calculate max uvw in metres
 maxuvm=$(echo "390000 / (${chan} + 11)" | bc -l)
 
-if [[ ! -z $ion ]]
+if [[ -n $ion ]]
 then
     echo "Performing ionospheric triage. "
     # Ionospheric triage
@@ -171,7 +171,7 @@ then
         --ref-tile ${refant} \
         --max-amp 2 \
         -m ${obsnum}.metafits \
-        "${solutions1}" 
+        "${solutions1}"
 
     solutions="${obsnum}_${calmodel%%.txt}_solutions_ts20.bin"
     # Remove duplicate obsnum

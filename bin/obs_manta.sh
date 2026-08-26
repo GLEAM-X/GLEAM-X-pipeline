@@ -1,7 +1,6 @@
 #! /bin/bash
 
-usage()
-{
+usage() {
 echo "obs_manta.sh [-p project] [-d dep] [-s timeave] [-k freqav] [-t] -o list_of_observations.txt
   -d dep      : job number for dependency (afterok)
   -p project  : project, (must be specified, no default)
@@ -17,15 +16,14 @@ exit 1;
 
 # Supercomputer options
 # Hardcode for downloading
-if [ ! -z $GXCOPYA ] 
-then
+if [[ -n $GXCOPYA ]]; then
     account="--account ${GXCOPYA}"
 fi
 standardq="${GXCOPYQ}"
 
 pipeuser=$(whoami)
 
-#initial variables
+# initial variables
 dep=
 queue="-p $standardq"
 tst=
@@ -35,8 +33,7 @@ freqres=
 edgeflag=80
 
 # parse args and set options
-while getopts ':tgd:p:s:k:o:f:e:' OPTION
-do
+while getopts ':tgd:p:s:k:o:f:e:' OPTION; do
     case "$OPTION" in
     d)
         dep=${OPTARG} ;;
@@ -55,19 +52,17 @@ do
     f)
         edgeflag=${OPTARG} ;;
     ? | : | h)
-            usage ;;
-  esac
+        usage ;;
+    esac
 done
 
 # if obslist is not specified or an empty file then just print help
 
-if [[ -z ${obslist} ]] || [[ ! -s ${obslist} ]] || [[ ! -e ${obslist} ]] || [[ -z $project ]]
-then
+if [[ -z ${obslist} ]] || [[ ! -s ${obslist} ]] || [[ ! -e ${obslist} ]] || [[ -z $project ]]; then
     usage
 fi
 
-if [[ ! -z ${dep} ]]
-then
+if [[ -n ${dep} ]]; then
     depend="--dependency=afterok:${dep}"
 fi
 
@@ -79,38 +74,34 @@ cd "${base}" || exit 1
 
 dllist=""
 list=$(cat "${obslist}")
-if [[ -e "${obslist}_manta.tmp" ]] ; then rm "${obslist}_manta.tmp" ; fi
+echo "" > "${obslist}_manta.tmp"
 
 # Set up telescope-configuration-dependent options
 # Might use these later to get different metafits files etc
-for obsnum in $list
-do
+for obsnum in $list; do
     # Note this implicitly 
-    if [[ $obsnum -lt 1151402936 ]] ; then
+    if [[ $obsnum -lt 1151402936 ]]; then
         telescope="MWA128T"
         basescale=1.1
-        if [[ -z $freqres ]] ; then freqres=40 ; fi
-        if [[ -z $timeres ]] ; then timeres=4 ; fi
-    elif [[ $obsnum -ge 1151402936 ]] && [[ $obsnum -lt 1191580576 ]] ; then
+        if [[ -z $freqres ]]; then freqres=40; fi
+        if [[ -z $timeres ]]; then timeres=4; fi
+    elif [[ $obsnum -ge 1151402936 ]] && [[ $obsnum -lt 1191580576 ]]; then
         telescope="MWAHEX"
         basescale=2.0
-        if [[ -z $freqres ]] ; then freqres=40 ; fi
-        if [[ -z $timeres ]] ; then timeres=8 ; fi
-    elif [[ $obsnum -ge 1191580576 ]] ; then
+        if [[ -z $freqres ]]; then freqres=40; fi
+        if [[ -z $timeres ]]; then timeres=8; fi
+    elif [[ $obsnum -ge 1191580576 ]]; then
         telescope="MWALB"
         basescale=0.5
-        if [[ -z $freqres ]] ; then freqres=40 ; fi
-        if [[ -z $timeres ]] ; then timeres=4 ; fi
+        if [[ -z $freqres ]]; then freqres=40; fi
+        if [[ -z $timeres ]]; then timeres=4; fi
     fi
 
-    if [[ -d "${obsnum}/${obsnum}.ms" ]]
-    then
+    if [[ -d "${obsnum}/${obsnum}.ms" ]]; then
         echo "${obsnum}/${obsnum}.ms already exists. I will not download it again."
     else
-        if [[ -z ${gpubox} ]]
-        then
-            preprocessor='birli'
-            echo "obs_id=${obsnum}, preprocessor=${preprocessor}, delivery=acacia, job_type=c, avg_time_res=${timeres}, avg_freq_res=${freqres}, flag_edge_width=${edgeflag}, output=ms" >>  "${obslist}_manta.tmp"
+        if [[ -z ${gpubox} ]]; then
+            echo "obs_id=${obsnum}, preprocessor=birli, delivery=scratch, job_type=c, avg_time_res=${timeres}, avg_freq_res=${freqres}, flag_edge_width=${edgeflag}, output=ms" >>  "${obslist}_manta.tmp"
             stem="ms"
         else
             echo "obs_id=${obsnum}, delivery=acacia, job_type=d, download_type=vis" >>  "${obslist}_manta.tmp"
@@ -146,8 +137,7 @@ echo "srun --export=all singularity run ${GXCONTAINER} ${script}" >> "${script}.
 sub="sbatch --begin=now+1minutes --mem=10G --export=$(echo ${!GX*} | tr ' ' ','),MWA_ASVO_API_KEY,SINGULARITY_BINDPATH  --time=08:00:00 -M ${GXCOPYM} --output=${output} --error=${error}"
 sub="${sub} ${depend} ${account} ${queue} ${script}.sbatch"
 
-if [[ ! -z ${tst} ]]
-then
+if [[ -n ${tst} ]]; then
     echo "script is ${script}"
     echo "submit via:"
     echo "${sub}"
@@ -164,16 +154,21 @@ output="${output//%A/${jobid[0]}}"
 
 # record submission
 n=1
-for obsnum in $dllist
-do
-    if [ "${GXTRACK}" = "track" ]
-    then
-        ${GXCONTAINER} track_task.py queue --jobid="${jobid[0]}" --taskid="${n}" --task='download' --submission_time="$(date +%s)" \
-                        --batch_file="${script}" --obs_id="${obsnum}" --stderr="${error}" --stdout="${output}"
-    fi
+if [[ "${GXTRACK}" == "track" ]]; then
+    for obsnum in $dllist; do
+        ${GXCONTAINER} track_task.py queue \
+                        --jobid="${jobid[0]}" \
+                        --taskid="${n}" \
+                        --task='download' \
+                        --submission_time="$(date +%s)" \
+                        --batch_file="${script}" \
+                        --obs_id="${obsnum}" \
+                        --stderr="${error}" \
+                        --stdout="${output}"
+    done
     ((n+=1))
-done
+fi
 
-echo "Submitted ${script} as ${jobid} . Follow progress here:"
+echo "Submitted ${script} as ${jobid}. Follow progress here:"
 echo "${output}"
 echo "${error}"

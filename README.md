@@ -11,9 +11,9 @@ If you use this code, or incorporate it into your own workflow, please cite [Hur
 <details>
 <summary><b>Overall design details</b></summary>
 
-The pipeline is divided into two main components. The first is a set of bash scripts that direct the processing of the pipeline, and the second is a set ofpython codes that implement specialised methods.
+The pipeline is divided into two main components. The first is a set of bash scripts that direct the processing of the pipeline, and the second is a set of python codes that implement specialised methods.
 
-Each stage within the pipeline has at least two bash scripts associated with it. One is a template script, which contains special placeholders which represent observation specific values. The second is a generating script. Based on user specifications, the generating script will adapt the template for processing, replacing the placeholder values with there actual values appropriate for processing. The mechanism used to do this substitution is a `sed` command within the generating script. In general, template scripts end in `tmpl` and are placed in the `templates` sub-directory, and the generating scripts have filenames beginning with either `obs` or `drift` and are placed in the `bin` directory. These `obs` and `drift` scripts are also responsible for submitting work to the SLURM scheduler.
+Each stage within the pipeline has at least two bash scripts associated with it. One is a template script, which contains special placeholders which represent observation specific values. The second is a generating script. Based on user specifications, the generating script will adapt the template for processing, replacing the placeholder values with their actual values appropriate for processing. The mechanism used to do this substitution is a `sed` command within the generating script. In general, template scripts end in `tmpl` and are placed in the `templates` sub-directory, and the generating scripts have filenames beginning with either `obs` or `drift` and are placed in the `bin` directory. These `obs` and `drift` scripts are also responsible for submitting work to the SLURM scheduler.
 
 The python codes are stored under the `gleam_x` sub-directory in a structure that is `pip` installable, if required. These codes have been updated to `python3`. Although some effort has been made to maintain backwards compatibility with `python2`, this is not guaranteed. Many of these python codes are called as standard command line programs within the pipeline, and have python module dependencies that should be standardised. For this reason, the `gleam_x` python module is installed within the singularity container. When deploying the pipeline for use, it is _not_ necessary to `pip install` the python module within this repository so that it is accessible as part of the larger HPC environment.
 
@@ -140,10 +140,13 @@ The pipeline expects that a completed configuration profile and has been complet
 
 ### Data dependencies
 
+> [!WARNING]
+> This section needs more attention. See [issue #4](https://github.com/GLEAM-X/GLEAM-X-pipeline/issues/4).
+
 The pipeline requires two data products to be downloaded:
 
 - The MWA [Fully Embedded Element Beam](http://cerberus.mwa128t.org/mwa_full_embedded_element_pattern.h5): A HDF5 file containing the MWA FEE beam, which is used in some tooling (`calibrate`) to evaluate the instrumental response towards a particular direction at a particular frequency
-- [Pre-computed MWA primary beams](https://cloudstor.aarnet.edu.au/plus/s/77FRhCpXFqiTq1H/download): A HDF5 file containing the FEE beam evaluated towards every MWA grid position for every frequency, which is used by a python [mwa_pb_lookup]([https://github.com/johnsmorgan/mwa_pb_lookup) module to quickly evaluate the primary beam by using the precompute and saved response (with interpolation in the spatial and frequency dimensions when required)
+- [Pre-computed MWA primary beams](https://cloudstor.aarnet.edu.au/plus/s/77FRhCpXFqiTq1H/download): A HDF5 file containing the FEE beam evaluated towards every MWA grid position for every frequency, which is used by the [`mwa_pb_lookup`](https://github.com/tjgalvin/mwa_pb_lookup) python module to quickly evaluate the primary beam by using the precompute and saved response (with interpolation in the spatial and frequency dimensions when required)
 
 These are automatically downloaded by the example profile scripts if they do not exist in the deployed GLEAM-X pipeline folder. Be aware though that they are downloaded and extracted in the working directory when the profile script is executed before being moved into place. Depending on the HPC environment and set up this might result in 'disk quota' issues, particularly if running from `$HOME`.
 

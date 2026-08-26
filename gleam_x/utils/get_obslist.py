@@ -2,7 +2,6 @@
 
 import pyvo as vo
 from argparse import ArgumentParser
-import pandas as pd
 
 mwa_tap_service = vo.dal.TAPService("http://vo.mwatelescope.org/mwa_asvo/tap")
 
@@ -70,5 +69,3 @@ if __name__ == "__main__":
 
     if args.out is not None:
         create_obsids_txt(df, args.out)
-        
-
