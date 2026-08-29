@@ -78,7 +78,7 @@ fi
 
 
 # Set up channel-dependent options
-chan="$(pyhead.py -p CENTCHAN ${metafits} | awk '{print $3}')"
+chan="$(pyhead.py -p CENTCHAN '${metafits}' | awk '{print $3}')"
 
 # Settings to support transient imaging / cleaning
 niter=12000
@@ -115,7 +115,7 @@ else
     echo "Optimally shifting co-ordinates of measurement set to $coords, with zenith shiftback."
     chgcentre \
     "${obsnum}.ms" \
-    ${coords}
+    "${coords}"
     
     # Now shift the pointing centre to point straight up, which approximates minw without making the phase centre rattle around
     chgcentre \
@@ -127,9 +127,9 @@ fi
 if [[ ! -e "${obsnum}_transient-t0020-image.fits" ]]
 then
     wsclean -name "${obsnum}_transient" \
-    -abs-mem ${GXMEMORY} \
-    -nwlayers ${GXNCPUS} \
-    -data-column ${datacolumn} \
+    -abs-mem "${GXMEMORY}" \
+    -nwlayers "${GXNCPUS}" \
+    -data-column "${datacolumn}" \
     -subtract-model \
     -pol I \
     -size $size $size \
@@ -193,17 +193,17 @@ in="${obsnum}_transient_concatenated_table.fits" \
 out="${obsnum}_transient_matched_table.fits"
 
 # Make a cube and a standard deviation image
-make_time_cube.py ${obsnum}_transient
+make_time_cube.py "${obsnum}"_transient
 
 # Dump the image and model files into a hdf5 container
-make_imstack.py -n 24 --start 0 "${obsnum}_transient"
+make_imstack.py -n "$(find "${obsnum}"_transient-t????-*.fits -type f | wc -l)" "${obsnum}_transient"
 
 # Save the flags
 ms="${obsnum}.ms"
 taql "select ctod(TIME), gsum(ntrue(amplitude(DATA[,::3])==0.0)), gsum(ntrue(FLAG[,::3])), gmean(WEIGHT_SPECTRUM[,::3]) from $ms where ANTENNA1 != ANTENNA2 groupby TIME" > "${obsnum}_summary.txt"
 
 # Clean up
-rm "${obsnum}"_transient-t????-*.fits
+# rm "${obsnum}"_transient-t????-*.fits
 # rm "${obsnum}_transient_concatenated_table.fits"
 
 track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
