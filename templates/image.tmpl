@@ -167,18 +167,18 @@ fi
 if [[ ! -e "${obsnum}_template.fits" ]]; then
     echo "Creating template image for ${obsnum}."
     wsclean \
-            -mgain 1.0 \
-            -nmiter 1 \
-            -niter 0 \
-            -name ${obsnum}_template \
-            -size ${imsize} ${imsize} \
-            -scale ${scale:0:8} \
-            -pol XX \
-            -data-column ${datacolumn} \
-            -channel-range 4 5 \
-            -interval 4 5 \
-            -nwlayers ${GXNCPUS} \
-            "${mst}"
+        -mgain 1.0 \
+        -nmiter 1 \
+        -niter 0 \
+        -name ${obsnum}_template \
+        -size ${imsize} ${imsize} \
+        -scale ${scale:0:8} \
+        -pol XX \
+        -data-column ${datacolumn} \
+        -channel-range 4 5 \
+        -interval 4 5 \
+        -nwlayers ${GXNCPUS} \
+        "${mst}"
 
     rm "${obsnum}_template-dirty.fits"
     mv "${obsnum}_template-image.fits" "${obsnum}_template.fits"
@@ -207,21 +207,26 @@ done
 set -o pipefail
 # Deep clean (for pipeline)
 wsclean \
-        -temp-dir $tmpdir \
-        -abs-mem 50 \
-        $multiscale \
-        -nmiter 3 \
-        -niter 10000000 \
-        -auto-mask ${msigma} \
-        -auto-threshold ${tsigma} \
-        -size ${imsize} ${imsize} \
-        -scale ${scale:0:8} \
-        -weight briggs ${robust} \
-        -pol I \
-        -join-channels \
-        -channels-out 4 \
-        -data-column ${datacolumn} \
-        "${mst}" | tee wsclean.log
+    -temp-dir $tmpdir \
+    $multiscale \
+    $scalebias \
+    -nmiter 5 \
+    -niter 10000000 \
+    -reuse-primary-beam \
+    -apply-primary-beam \
+    -auto-mask ${msigma} \
+    -auto-threshold ${tsigma} \
+    -name ${obsnum}_deep \
+    -size ${imsize} ${imsize} \
+    -scale ${scale:0:8} \
+    -weight briggs ${robust} \
+    -pol I \
+    -join-channels \
+    -channels-out 4 \
+    -save-source-list \
+    -fit-spectral-pol 2 \
+    -data-column ${datacolumn} \
+    "${mst}" | tee wsclean.log
 
 if [[ ! -z $ramcopy ]]; then
     mv ./${obsnum}.ms ./${obsnum}_backup.ms
