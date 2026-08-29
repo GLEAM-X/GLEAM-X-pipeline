@@ -140,7 +140,7 @@ The pipeline expects that a completed configuration profile and has been complet
 
 ### Data dependencies
 
-> [!WARNING]
+> ⚠️ <span style="color: yellow;"> WARNING </span>
 > This section needs more attention. See [issue #4](https://github.com/GLEAM-X/GLEAM-X-pipeline/issues/4).
 
 The pipeline requires two data products to be downloaded:
