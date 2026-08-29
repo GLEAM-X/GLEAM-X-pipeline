@@ -1,58 +1,61 @@
 #!/bin/bash -l
-#SBATCH --time=02:00:00
+#SBATCH --time=12:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
 
 set -x
 
 pipeuser=PIPEUSER
 obsnum=OBSNUM
-
-echo $SLURM_MEM_PER_NODE
-
+ramcopy=RAMCOPY
 
 # If obsnum is a file, then we are in an array job
-if [[ -f "${obsnum}" ]]
-then
+if [[ -f "${obsnum}" ]]; then
     taskid=${SLURM_ARRAY_TASK_ID}
     jobid=${SLURM_ARRAY_JOB_ID}
 
     echo "obsfile ${obsnum}"
     obsnum=$(sed -n -e "${SLURM_ARRAY_TASK_ID}"p "${obsnum}")
     echo "autocal obsid ${obsnum}"
+    tmpdir=/tmp/slurm_autocal_${jobid}_${taskid}
 else
     taskid=1
     jobid=${SLURM_JOB_ID}
+    tmpdir=/tmp/slurm_autocal_${jobid}
 fi
 
 echo "jobid: ${jobid}"
 echo "taskid: ${taskid}"
 
 test_fail() {
-if [[ $1 != 0 ]]
-then
+if [[ $1 != 0 ]]; then
     singularity run ${GXCONTAINER} track_task.py fail --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
     exit "$1"
 fi
 }
 
 datadir=DATADIR
-if [[ $obsnum -gt 1300000000 ]] && [[ $obsnum -lt 1342950000 ]]
-then
-    refant=0
-elif [[ $obsnum -gt 1342950000 ]]
-then
+# Setting the reference antenna
+if [[ $obsnum -gt 1201000000 ]] && [[ $obsnum -lt 1201400000 ]]; then
     refant=8
-else
-    refant=127
+elif [[ $obsnum -gt 1300000000 ]] && [[ $obsnum -lt 1342950000 ]]; then
+    refant=0
+elif [[ $obsnum -gt 1342950000 ]] && [[ $obsnum -lt 1425294600 ]]; then
+    refant=8
+elif [[ $obsnum -gt 1425294600 ]] && [[ $obsnum -lt 1436999999 ]]; then
+    refant=0
+elif [[ $obsnum -gt 1451700000 ]] && [[ $obsnum -lt 1451800000 ]]; then # Jan 2026
+    refant=8
+elif [[ $obsnum -ge 1452536120 ]] && [[ $obsnum -le 1452542632 ]]; then # Everything else
+    refant=21
+elif [[ $obsnum -gt 1452542632 ]] || [[ $obsnum -lt 1300000000 ]]; then
+    refant=7
 fi
 fraction=FRACTION
 sthresh=STHRESH
 
 # GLEAM-X sky model
 catfile="${GXBASE}/models/GGSM.txt"
-
 
 # MWA beam information
 MWAPATH="${GXMWAPB}"
@@ -74,10 +77,18 @@ singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="
 cd "${datadir}/${obsnum}" || exit
 
 metafits="${obsnum}.metafits"
-if [[ ! -e ${metafits} ]] || [[ ! -s ${metafits} ]]
-then
+if [[ ! -e ${metafits} ]] || [[ ! -s ${metafits} ]]; then
     wget -O "${metafits}" http://ws.mwatelescope.org/metadata/fits?obs_id=${obsnum}
     test_fail $?
+fi
+
+# In RAM or here?
+if [[ -n $ramcopy ]]; then
+    mkdir -p $tmpdir
+    cp -rf ${obsnum}.ms $tmpdir
+    mst=$tmpdir/${obsnum}.ms
+else
+    mst=${obsnum}.ms
 fi
 
 calibrator=$(singularity run $GXCONTAINER pyhead.py -p CALIBSRC "$metafits" | awk '{print $3}' )
@@ -88,8 +99,7 @@ RA=$(singularity run $GXCONTAINER pyhead.py -p RA "$metafits" | awk '{print $3}'
 Dec=$(singularity run $GXCONTAINER pyhead.py -p DEC "$metafits" | awk '{print $3}' )
 chan=$(singularity run $GXCONTAINER pyhead.py -p CENTCHAN "$metafits" | awk '{print $3}' )
 
-if [[ ! -e "${obsnum}_local_gleam_model.txt" ]]
-then
+if [[ ! -e "${obsnum}_local_gleam_model.txt" ]]; then
     ln -s ${catfile} "${obsnum}_local_gleam_model.txt"
 
 #     singularity run ${GXCONTAINER} crop_catalogue.py \
@@ -117,20 +127,16 @@ then
 fi
 calmodel="${obsnum}_local_gleam_model.txt"
 
-
-cd "${datadir}/${obsnum}" || exit
-
 # Check whether the phase centre has already changed
 # Calibration will fail if it has, so measurement set must be shifted back to its original position
-current=$(singularity run $GXCONTAINER chgcentre "${obsnum}.ms") 
+current=$(singularity run $GXCONTAINER chgcentre "${mst}") 
 
-if [[ $current == *"shift"* ]] 
-then
+if [[ $current == *"shift"* ]]; then
     echo "Detected that this measurement set has undergone a denormal shift; this must be undone before calibration."
     coords=$(singularity run $GXCONTAINER calc_optimum_pointing.py --metafits "${metafits}")
     echo "Optimally shifting co-ordinates of measurement set to $coords, without zenith shiftback."
     srun singularity run ${GXCONTAINER} chgcentre \
-            "${obsnum}.ms" \
+            "${mst}" \
             ${coords}
 else
     echo "Detected that this measurement set has not yet had its phase centre changed. Not shifting."
@@ -145,8 +151,7 @@ minuvm=$(echo "234 * ${minuv} / ${chan}" | bc -l)
 # Calculate max uvw in metres
 maxuvm=$(echo "390000 / (${chan} + 11)" | bc -l)
 
-if [[ -n $ion ]]
-then
+if [[ -n $ion ]]; then
     echo "Performing ionospheric triage. "
     # Ionospheric triage
     solutions1="${obsnum}_${calmodel%%.txt}_solutions_ts10.bin"
@@ -154,16 +159,16 @@ then
     solutions1="${solutions1/${obsnum}_${obsnum}_/${obsnum}_}"
 
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
+    srun -N 1 -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --max-iterations 500 \
         --timesteps {0..9} \
-        --num-sources 1000 \
+        --num-sources 500 \
         --uvw-min "${minuv}lambda" \
         --uvw-max 1667lambda \
         --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
         --outputs "${solutions1}" \
-        -d "${obsnum}.ms" "${obsnum}.metafits" \
+        -d "${mst}" "${obsnum}.metafits" \
         -s ${calmodel}
     
     singularity run $GXCONTAINER hyperdrive \
@@ -171,14 +176,14 @@ then
         --ref-tile ${refant} \
         --max-amp 2 \
         -m ${obsnum}.metafits \
-        "${solutions1}"
+        "${solutions1}" 
 
     solutions="${obsnum}_${calmodel%%.txt}_solutions_ts20.bin"
     # Remove duplicate obsnum
     solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
+    srun -N 1 -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --timesteps {10..19} \
         --max-iterations 500 \
@@ -187,7 +192,7 @@ then
         --uvw-max 1667lambda \
         --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
         --outputs "${solutions}" \
-        -d "${obsnum}.ms" "${obsnum}.metafits" \
+        -d "${mst}" "${obsnum}.metafits" \
         -s ${calmodel}
 
     singularity run $GXCONTAINER hyperdrive \
@@ -201,7 +206,7 @@ then
     solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-    srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
+    srun -N 1 -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --timesteps {20..29} \
         --max-iterations 500 \
@@ -210,7 +215,7 @@ then
         --uvw-max 1667lambda \
         --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
         --outputs "${solutions}" \
-        -d "${obsnum}.ms" "${obsnum}.metafits" \
+        -d "${mst}" "${obsnum}.metafits" \
         -s ${calmodel}
     
     
@@ -235,15 +240,15 @@ solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
 
 # # calibrate
 export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
-srun -N 1 -n $SLURM_NTASKS -c $SLURM_CPUS_PER_TASK -m block:block:block singularity run $GXCONTAINER hyperdrive \
+srun -N 1 -m block:block:block singularity run $GXCONTAINER hyperdrive \
     di-calibrate \
     --uvw-min "${minuv}lambda" \
     --max-iterations 500 \
-    --num-sources 1000 \
+    --num-sources 500 \
     --uvw-max 1667lambda \
     --beam-file "${MWAPATH}/mwa_full_embedded_element_pattern.h5" \
     --outputs "${solutions}" \
-    -d "${obsnum}.ms" "${obsnum}.metafits" \
+    -d "${mst}" "${obsnum}.metafits" \
     -s ${calmodel}
 test_fail $?
 
@@ -265,10 +270,14 @@ test_fail $?
 # Test to see if the calibration solution meets minimum quality control. At the moment
 # this is a simple check based on the number of flagged solutions
 result=$(singularity run $GXCONTAINER check_assign_solutions.py -t "${fraction}" check "${solutions%.bin}_ref.bin")
-if echo "${result}" | grep -q fail
-then
+if echo "${result}" | grep -q fail; then
     mv "${solutions%.bin}_ref.bin" "${solutions%.bin}_ref_failed.bin"
     test_fail 1
+fi
+
+if [[ -n $ramcopy ]]; then
+    cp -rf ${mst} ${obsnum}.ms
+    rm -rf $tmpdir
 fi
 
 singularity run ${GXCONTAINER} track_task.py finish --jobid="${jobid}" --taskid="${taskid}" --finish_time="$(date +%s)"
