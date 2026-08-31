@@ -8,6 +8,8 @@ echo "obs_autocal.sh [-d dep] [-a account] [-t] obsnum
   -i         : disable the ionospheric metric tests (default = False)
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
+  -r         : Copy to RAM instead of reading from disk
+                (Faster, but needs ~2x as much RAM as the size of the measurement set)
   -f FRAC    : the acceptable fraction of spectrum that may be flagged in a calibration
                solution file before it is marked as bad. Value between 0 - 1. (default = 0.25)
   -s SFRAC   : the acceptable fraction of a segmented spectrum that may be flagged in a 
@@ -28,8 +30,7 @@ frac=0.25
 sthresh=0.4
 
 # parse args and set options
-while getopts ':tia:d:p:f:s:' OPTION
-do
+while getopts ':tira:d:p:f:s:' OPTION; do
     case "$OPTION" in
 	d)
 	    dep=${OPTARG}
@@ -46,6 +47,9 @@ do
 	t)
 	    tst=1
 	    ;;
+    r)
+        ramcopy=1
+        ;;
     f)
         frac=${OPTARG}
         ;;
@@ -62,19 +66,16 @@ shift  "$(($OPTIND -1))"
 obsnum=$1
 
 # if obsid or project are empty then just print help
-if [[ -z ${obsnum} || -z ${project} ]]
-then
+if [[ -z ${obsnum} || -z ${project} ]]; then
     usage
 fi
 
-if [[ ! -z ${GXACCOUNT} ]]
-then
+if [[ ! -z ${GXACCOUNT} ]]; then
     account="--account=${GXACCOUNT}"
 fi
 
 # Establish job array options
-if [[ -f ${obsnum} ]]
-then
+if [[ -f ${obsnum} ]]; then
     numfiles=$(wc -l "${obsnum}" | awk '{print $1}')
     jobarray="--array=1-${numfiles}"
 else
@@ -86,14 +87,18 @@ queue="-p ${GXSTANDARDQ}"
 datadir="${GXSCRATCH}/$project"
 
 # set dependency
-if [[ ! -z ${dep} ]]
-then
-    if [[ -f ${obsnum} ]]
-    then
+if [[ ! -z ${dep} ]]; then
+    if [[ -f ${obsnum} ]]; then
         depend="--dependency=aftercorr:${dep}"
     else
         depend="--dependency=afterok:${dep}"
     fi
+fi
+
+if [[ ! -z $ramcopy ]]; then
+    maxtime="--time=01:00:00"
+else
+    maxtime="--time=06:00:00"
 fi
 
 script="${GXSCRIPT}/autocal_${obsnum}.sh"
@@ -101,6 +106,7 @@ script="${GXSCRIPT}/autocal_${obsnum}.sh"
 cat "${GXBASE}/templates/autocal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
                                      -e "s:DATADIR:${datadir}:g" \
                                      -e "s:IONOTEST:${ion}:g" \
+                                     -e "s:RAMCOPY:${ramcopy}:g" \
                                      -e "s:PIPEUSER:${pipeuser}:g" \
                                      -e "s:FRACTION:${frac}:g" \
                                      -e "s:STHRESH:${sthresh}:g" > "${script}"
@@ -109,25 +115,21 @@ cat "${GXBASE}/templates/autocal.tmpl" | sed -e "s:OBSNUM:${obsnum}:g" \
 output="${GXLOG}/autocal_${obsnum}.o%A"
 error="${GXLOG}/autocal_${obsnum}.e%A"
 
-if [[ -f ${obsnum} ]]
-then
+if [[ -f ${obsnum} ]]; then
    output="${output}_%a"
    error="${error}_%a"
 fi
 
-if [[ ${GXCOMPUTER} == "garrawarla" ]]
-then
+if [[ ${GXCOMPUTER} == "garrawarla" ]]; then
     CPUSPERTASK=3
     MEMPERTASK=15
-elif [[ ${GXCOMPUTER} == "setonix" ]]
-then 
-    CPUSPERTASK=8
-    MEMPERTASK=15
+elif [[ ${GXCOMPUTER} == "setonix" ]]; then 
+    CPUSPERTASK=24
+    MEMPERTASK=100
 else
     CPUSPERTASK=${GXNCPUS}
     MEMPERTASK=${GXABSMEMORY}
 fi
-
 
 chmod 755 "${script}"
 
@@ -135,10 +137,9 @@ chmod 755 "${script}"
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "srun --cpus-per-task=${CPUSPERTASK} --ntasks=1 --ntasks-per-node=1  singularity run ${GXCONTAINER} ${script}" >> ${script}
 
-sub="sbatch --begin=now+5minutes --export=ALL --cpus-per-task=${CPUSPERTASK}  --mem=${MEMPERTASK}G  --partition=${GXSTANDARDQ} --output=${output} --error=${error}"
-sub="${sub} ${account} ${jobarray} ${depend} ${queue} ${script}"
-if [[ ! -z ${tst} ]]
-then
+sub="sbatch --begin=now+5minutes --export=ALL --cpus-per-task=${CPUSPERTASK} --mem=${MEMPERTASK}G --partition=${GXSTANDARDQ} --output=${output} --error=${error}"
+sub="${sub} ${account} ${jobarray} ${depend} ${queue} ${maxtime} ${script}"
+if [[ ! -z ${tst} ]]; then
     echo "script is ${script}"
     echo "submit via:"
     echo "${sub}"
@@ -151,21 +152,18 @@ jobid=${jobid[3]}
 
 echo "Submitted ${script} as ${jobid} . Follow progress here:"
 
-for taskid in $(seq ${numfiles})
-    do
+for taskid in $(seq ${numfiles}); do
     # rename the err/output files as we now know the jobid
     obserror=$(echo "${error}" | sed -e "s/%A/${jobid}/" -e "s/%a/${taskid}/")
     obsoutput=$(echo "${output}" | sed -e "s/%A/${jobid}/" -e "s/%a/${taskid}/")
 
-    if [[ -f ${obsnum} ]]
-    then
+    if [[ -f ${obsnum} ]]; then
         obs=$(sed -n -e "${taskid}"p "${obsnum}")
     else
         obs=$obsnum
     fi
 
-    if [ "${GXTRACK}" = "track" ]
-    then
+    if [[ "${GXTRACK}" = "track" ]]; then
         # record submission
         ${GXCONTAINER} track_task.py queue --jobid="${jobid}" --taskid="${taskid}" --task='calibrate' --submission_time="$(date +%s)" --batch_file="${script}" \
                             --obs_id="${obs}" --stderr="${obserror}" --stdout="${obsoutput}"

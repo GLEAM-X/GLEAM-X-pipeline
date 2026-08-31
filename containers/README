@@ -1,11 +1,13 @@
-Singularity build recipes for tooling related to gleam-x
+# Singularity build recipes for tooling related to gleam-x
 
 Built with:
 
+```bash
 sudo singularity build gleamx_tools.img gleamx_build.txt
+```
 
-Once built the container has all software packages required to process GLEAM-X data. 
+Once built the container has all software packages required to process GLEAM-X data.
 
-External data dependencies related to the MWA primary beam are not packed within the container. Doing so would increase the container filesize considerably. 
+External data dependencies related to the MWA primary beam are not packed within the container. Doing so would increase the container filesize considerably.
 
-The container include the 'mwa-reduce' software package, which is only available to the MWA collaboration. 
+The container includes the 'mwa-reduce' software package, which is only available to the MWA collaboration.

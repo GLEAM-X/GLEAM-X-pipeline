@@ -4,6 +4,7 @@ usage()
 {
 echo "obs_autoflag.sh [-p project] [-a account] [-d dep] [-t] obsnum
   -p project : project, no default
+  -a account : account, defaults to GXACCOUNT environment variable
   -d dep     : job number for dependency (afterok)
   -t         : test. Don't submit job, just make the batch file
                and then return the submission command
@@ -21,7 +22,10 @@ tst=
 while getopts ':td:a:p:' OPTION
 do
     case "$OPTION" in
-	d)
+	a)
+        account="--account=${OPTARG}"
+        ;;
+    d)
 	    dep=${OPTARG}
 	    ;;
 	p)
@@ -39,15 +43,18 @@ done
 shift  "$(($OPTIND -1))"
 obsnum=$1
 
-# if obsid or project are empty then just pring help
+# if obsid or project are empty then just print help
 if [[ -z ${obsnum} ]] || [[ -z ${project} ]]
 then
     usage
 fi
 
-if [[ ! -z ${GXACCOUNT} ]]
+if [[ -z ${account} ]] && [[ -n ${GXACCOUNT} ]]
 then
     account="--account=${GXACCOUNT}"
+else
+    echo "No account specified. Specify with -a or set GXACCOUNT environment variable. Exiting."
+    exit 1
 fi
 
 # Establish job array options
@@ -64,7 +71,7 @@ queue="-p ${GXSTANDARDQ}"
 datadir="${GXSCRATCH}/${project}"
 
 # set dependency
-if [[ ! -z ${dep} ]]
+if [[ -n ${dep} ]]
 then
     if [[ -f ${obsnum} ]]
     then
@@ -95,10 +102,10 @@ chmod 755 "${script}"
 # sbatch submissions need to start with a shebang
 # echo '#!/bin/bash' > ${script}.sbatch
 # echo "srun --cpus-per-task=1 --ntasks=1 --ntasks-per-node=1 singularity run ${GXCONTAINER} ${script}" >> ${script}.sbatch
-sub="sbatch --begin=now+5minutes --export=ALL --account=${GXACCOUNT} --partition=${GXSTANDARDQ} --job-name=autoflag_${obsnum} --output=${output} --error=${error} "
+sub="sbatch --begin=now --export=ALL ${account} --partition=${GXSTANDARDQ} --job-name=autoflag_${obsnum} --output=${output} --error=${error} "
 sub="${sub} ${jobarray} ${depend} ${script}"
 
-if [[ ! -z ${tst} ]]
+if [[ -n ${tst} ]]
 then
     echo "script is ${script}"
     echo "submit via:"
@@ -125,7 +132,7 @@ do
         obs=$obsnum
     fi
 
-    if [ "${GXTRACK}" = "track" ]
+    if [[ "${GXTRACK}" = "track" ]]
     then
         # record submission
         ${GXCONTAINER} track_task.py queue --jobid="${jobid}" --taskid="${taskid}" --task='flag' --submission_time="$(date +%s)"\
@@ -135,4 +142,3 @@ do
     echo "$obsoutput"
     echo "$obserror"
 done
-

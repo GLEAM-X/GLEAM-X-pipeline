@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 """ use python/fits to add/print/update/delete header keywords"""
-from __future__ import print_function
-
-import copy, os, shutil, glob, sys, string, re, types
-import math
+import os, sys, re
 from astropy.io import fits
 
-yes=0
-no=1
-
 ######################################################################
-def pyhead(file, extn, cmdlist, arglist, verbose=1, printfile=1, printextn=1, update=0, doparse=1):        
+def pyhead(file, extn, cmdlist, arglist, verbose=1, printfile=1, printextn=1, update=0, doparse=1):
     """ use python/fits to add/print/update/delete header keywords"""
 
     try:
@@ -135,6 +129,7 @@ def pyhead(file, extn, cmdlist, arglist, verbose=1, printfile=1, printextn=1, up
         inf.verify('fix')
         inf.flush()
     inf.close()
+
 ######################################################################
 def evalhdr(hdr,arg):
     """evaluates expressions involving header keywords
@@ -174,6 +169,7 @@ def evalhdr(hdr,arg):
         print("Could not evaluate expression {0}: {1}".format(arg,arg2))
         sys.exit(1)
     return ret
+
 ######################################################################
 def getcardmatches(hdr, template):
     """ gets header card matches to wildcard queries
@@ -190,7 +186,6 @@ def getcardmatches(hdr, template):
         if (ismatch != None):
             matchedcards.append(card)
     return matchedcards
-
     
 ######################################################################
 def usage():
@@ -309,7 +304,6 @@ def main():
             ext=0
             
         pyhead(file, ext, cmdlist, arglist, 1, len(filelist)>1, ext != 0, update,doparse=doparse)
-
 
 ######################################################################
 # Running as executable

@@ -111,7 +111,7 @@ fi
 
 chmod 755 "${script}"
 
-if [ ! -z ${GXNCPULINE} ]
+if [[ -n ${GXNCPULINE} ]]
 then
     # zip_ms only needs a single CPU core
     GXNCPULINE="--ntasks-per-node=1"
