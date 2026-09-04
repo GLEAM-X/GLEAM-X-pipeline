@@ -46,9 +46,10 @@ subchans="MFS 0000 0001 0002 0003"
 # Minimum uvw for self-calibration (in lambda)
 minuv=75
 # S/N Level at which to choose masked pixels for deepclean
-msigma=3
+msigma=5
 # S/N Threshold at which to stop cleaning
-tsigma=1
+tsigma=3
+# Lowering the above values will make the cleaning more aggressive and introduce a CLEAN bias and is also computationally more expensive.
 
 # Update database
 cd "${base}" || exit
@@ -110,8 +111,9 @@ freqrange="${lowfreq}-${highfreq}"
 # Calculate min uvw in metres
 minuvm=$(echo "234 * $minuv / $chan" | bc -l)
 
-# Found that multiscale cleaning recovers flux density in the extragalactic sky better than not, and doesn't add much to processing time
-multiscale="-multiscale -mgain 0.85 -multiscale-gain 0.15"
+# Found that multiscale cleaning recovers flux density in the extragalactic sky better than not, and doesn't add much to processing time.
+# multiscale="-multiscale -mgain 0.85 -multiscale-gain 0.15" # If you really want to use multiscale.
+multiscale="-mgain 0.85" # For transient searches, we can be off with not using multiscale.
 
 if [[ ! -z $ramcopy ]]; then
     mkdir -p $tmpdir
@@ -210,7 +212,7 @@ wsclean \
     -temp-dir $tmpdir \
     $multiscale \
     $scalebias \
-    -nmiter 5 \
+    -nmiter 3 \
     -niter 10000000 \
     -reuse-primary-beam \
     -apply-primary-beam \
@@ -227,6 +229,8 @@ wsclean \
     -fit-spectral-pol 2 \
     -data-column ${datacolumn} \
     "${mst}" | tee wsclean.log
+
+    # -mwapath ${GXMWAPB} \ # For calculating the primary beam on-the-fly. Replace --reuse-primary-beam with this if you encounter errors with "the primary beam not found" by lookup_jones.py.
 
 if [[ ! -z $ramcopy ]]; then
     mv ./${obsnum}.ms ./${obsnum}_backup.ms
