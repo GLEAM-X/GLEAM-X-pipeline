@@ -123,9 +123,6 @@ fi
 if [[ ${GXCOMPUTER} == "garrawarla" ]]; then
     CPUSPERTASK=3
     MEMPERTASK=15
-elif [[ ${GXCOMPUTER} == "setonix" ]]; then 
-    CPUSPERTASK=24
-    MEMPERTASK=100
 else
     CPUSPERTASK=${GXNCPUS}
     MEMPERTASK=${GXABSMEMORY}

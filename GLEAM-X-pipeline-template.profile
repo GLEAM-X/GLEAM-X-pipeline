@@ -41,18 +41,19 @@ export GXCLUSTER=${cluster}     # Describes the name of the cluster, e.g. "magnu
 export GXSTANDARDQ="work"       # Slurm queue to submit tasks to, e.g. "workq". Available queues can be inspected using 'sinfo' on a system where the slurm schedular is available
 
 # Compute node memory specification
-export GXABSMEMORY=200          # Absolute memory a machine should be considered to have in GB, e.g. 60. This value is submitted to slurm via "--mem=${GXABSMEMORY}"
+export GXABSMEMORY=50           # Absolute memory a machine should be considered to have in GB, e.g. 60. This value is submitted to slurm via "--mem=${GXABSMEMORY}"
                                 # For tasks that require only a small memory allocation, this option is ignored and a hard-coded value of "24G" is used. This is done
                                 # to assist in quicker resource allocation 
-export GXMEMORY=185             # Typical memory a program should use in GB, e.g. 50. This is used for tasks like 'calibrate' and 'wsclean' to attempt to limit
+export GXMEMORY=40              # Typical memory a program should use in GB, e.g. 50. This is used for tasks like 'calibrate' and 'wsclean' to attempt to limit
                                 # its usage to the fit within the memory allocation alongside other overheads. It is recommended that this be ~10G smaller than
                                 # GXABSMEMORY, although there is no technical reason it could be set otherwise. 
 
 # Compute node CPU specification
-export GXNCPUS=48               # Number of CPUs of each machine, e.g. 48. For tasks that have a 'core' like option this value is passed.
-export GXNLCPUS=48              # Number of logical CPUs on each machine, e.g. 48. This option may be phased out.
-export GXNPCPUS=24              # Number of physical CPUs on each machine, e.g. 24. This is meant to count only the physical cores available.
-export GXNCPULINE="--nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${GXNCPUS}"            # Informs the SLURM request how many CPUs should be allocated, e.g. "--ntasks-per-node=${GXNPCPUS}"
+export GXNCPUS=32               # Number of CPUs of each machine, e.g. 48. For tasks that have a 'core' like option this value is passed.
+export GXNLCPUS=32              # Number of logical CPUs on each machine, e.g. 48. This option may be phased out.
+export GXNPCPUS=16              # Number of physical CPUs on each machine, e.g. 24. This is meant to count only the physical cores available.
+export GXNCPULINE="--nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=${GXNCPUS}"
+                                # Informs the SLURM request how many CPUs should be allocated, e.g. "--ntasks-per-node=${GXNPCPUS}"
                                 # If unset the SLURM default will be used. For tasks that are not parallelisable (apply_cal, uvflag),
                                 # this option will be overwritten (if it is set) to ensure a single core is used.
                                 # There may be some interaction between this line and $GXNCPUS when deployed. For instance, on magnus only a max of 24 cores

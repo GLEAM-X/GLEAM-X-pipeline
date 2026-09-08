@@ -65,11 +65,6 @@ minuv=75
 
 # Perform ionospheric triage? (1 means yes, blank means no)
 ion=IONOTEST
-# Interval for ionospheric triage (in time steps)
-# Typically we have 2-minute observations which have been averaged to 4s
-# So in total they contain 30 time steps
-# Do do useful ionospheric differencing we need to compare the start and the end
-ts=10
 
 # start
 singularity run ${GXCONTAINER} track_task.py start --jobid="${jobid}" --taskid="${taskid}" --start_time="$(date +%s)"
@@ -152,17 +147,19 @@ minuvm=$(echo "234 * ${minuv} / ${chan}" | bc -l)
 maxuvm=$(echo "390000 / (${chan} + 11)" | bc -l)
 
 if [[ -n $ion ]]; then
-    echo "Performing ionospheric triage. "
-    # Ionospheric triage
-    solutions1="${obsnum}_${calmodel%%.txt}_solutions_ts10.bin"
-    # Remove duplicate obsnum
-    solutions1="${solutions1/${obsnum}_${obsnum}_/${obsnum}_}"
+    echo "Performing ionospheric triage."
 
+    ntimesteps=`singularity run -B $PWD ${GXCONTAINER} taql "calc count([select distinct(TIME) from ${mst}])"`
+    # Break the observation into 3 chunks of ntimesteps/3 timesteps each.
+    chunk_size=$(echo "$ntimesteps / 3" | bc)
+
+    # Ionospheric triage
+    solutions1="${calmodel%%.txt}_solutions_ts1.bin"
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
     srun -N 1 -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
         --max-iterations 500 \
-        --timesteps {0..9} \
+        --timesteps $(eval echo {0..$(echo "$chunk_size - 1" | bc)}) \
         --num-sources 500 \
         --uvw-min "${minuv}lambda" \
         --uvw-max 1667lambda \
@@ -178,14 +175,11 @@ if [[ -n $ion ]]; then
         -m ${obsnum}.metafits \
         "${solutions1}" 
 
-    solutions="${obsnum}_${calmodel%%.txt}_solutions_ts20.bin"
-    # Remove duplicate obsnum
-    solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
-
+    solutions="${calmodel%%.txt}_solutions_ts2.bin"
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
     srun -N 1 -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
-        --timesteps {10..19} \
+        --timesteps $(eval echo {$chunk_size..$(echo "2 * $chunk_size - 1" | bc)}) \
         --max-iterations 500 \
         --num-sources 1000 \
         --uvw-min "${minuv}lambda" \
@@ -200,15 +194,13 @@ if [[ -n $ion ]]; then
         --ref-tile ${refant} \
         --max-amp 2 \
         -m ${obsnum}.metafits \
-        "${solutions}" 
-    solutions="${obsnum}_${calmodel%%.txt}_solutions_ts30.bin"
-    # Remove duplicate obsnum
-    solutions="${solutions/${obsnum}_${obsnum}_/${obsnum}_}"
+        "${solutions}"
 
+    solutions="${calmodel%%.txt}_solutions_ts3.bin"
     export FI_CXI_DEFAULT_VNI=$(od -vAn -N4 -tu < /dev/urandom)
     srun -N 1 -m block:block:block singularity run $GXCONTAINER hyperdrive \
         di-calibrate \
-        --timesteps {20..29} \
+        --timesteps $(eval echo {$(echo "2 * $chunk_size" | bc)..$(echo "$ntimesteps - 1" | bc)}) \
         --max-iterations 500 \
         --num-sources 1000 \
         --uvw-min "${minuv}lambda" \
@@ -217,8 +209,7 @@ if [[ -n $ion ]]; then
         --outputs "${solutions}" \
         -d "${mst}" "${obsnum}.metafits" \
         -s ${calmodel}
-    
-    
+
     singularity run $GXCONTAINER hyperdrive \
         solutions-plot \
         --ref-tile ${refant} \
@@ -228,9 +219,10 @@ if [[ -n $ion ]]; then
 
     echo "Ionospheric calibration finished. Creating plots and statistics. "
 
-
     singularity run ${GXCONTAINER} python ${GXBASE}/gleam_x/bin/aocal_diff.py --metafits="${metafits}" --names --lastsol "${solutions}" "${solutions1}" --refant="${refant}"
-    singularity run ${GXCONTAINER} iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
+    if [[ -n ${GXDBHOST} ]] && [[ -n ${GXDBPORT} ]] && [[ -n ${GXDBUSER} ]] && [[ -n ${GXDBPASS} ]]; then
+        singularity run ${GXCONTAINER} iono_update.py --ionocsv "${obsnum}_ionodiff.csv"
+    fi
 fi
 
 # At the moment, assume that the ionosphere is OK, and derive some real solutions
