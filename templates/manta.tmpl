@@ -10,6 +10,13 @@ obslist=OBSLIST
 stem=STEM
 tres=TRES
 fres=FRES
+resubmit=RESUBMIT
+
+if [[ ${resubmit} == 1 ]]; then
+    allow_resubmit="--allow-resubmit"
+else
+    allow_resubmit=""
+fi
 
 # start download
 cd "${base}" || exit 1
@@ -21,7 +28,7 @@ for obsnum in $list; do
 done
 
 export SSL_VERIFY=0
-mwa_client --csv="${obslist}_manta.tmp" --dir="${base}"
+mwa_client ${allow_resubmit} --csv="${obslist}_manta.tmp" --dir="${base}"
 
 n=1
 for obsnum in $list; do

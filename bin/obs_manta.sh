@@ -6,6 +6,7 @@ echo "obs_manta.sh [-p project] [-d dep] [-s timeave] [-k freqav] [-t] obsnum
   -p project  : project, (must be specified, no default)
   -s timeres  : time resolution in sec. default = 2 s
   -k freqres  : freq resolution in KHz. default = 40 kHz
+  -r          : enables --allow-resubmit in the mwa_client command
   -f edgeflag : number of edge band channels flagged. default = 80
   -g          : download gpubox fits files instead of measurement sets
   -t          : test. Don't submit job, just make the batch file
@@ -30,10 +31,11 @@ tst=
 gpubox=
 timeres=
 freqres=
+allow_resubmit=0
 edgeflag=80
 
 # parse args and set options
-while getopts ':tgd:p:s:k:f:e:' OPTION; do
+while getopts ':tgd:p:s:k:f:e:r:' OPTION; do
     case "$OPTION" in
     d)
         dep=${OPTARG} ;;
@@ -49,6 +51,8 @@ while getopts ':tgd:p:s:k:f:e:' OPTION; do
         gpubox=1 ;;
     f)
         edgeflag=${OPTARG} ;;
+    r)
+        allow_resubmit=1 ;;
     ? | : | h)
         usage ;;
     esac
@@ -123,6 +127,7 @@ cat "${GXBASE}/templates/manta.tmpl" | sed -e "s:OBSLIST:${obsnum}:g" \
                                  -e "s:STEM:${stem}:g"  \
                                  -e "s:TRES:${timeres}:g" \
                                  -e "s:FRES:${freqres}:g" \
+                                 -e "s:RESUBMIT:${allow_resubmit}:g" \
                                  -e "s:BASEDIR:${base}:g" \
                                  -e "s:PIPEUSER:${pipeuser}:g" > "${script}"
 
